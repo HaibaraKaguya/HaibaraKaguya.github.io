@@ -3,29 +3,29 @@ document.documentElement.classList.add('js');
 const NOTES = [
   {
     id: '03', accent: '#d8202c', repo: 'Shuchiin Academy 2.0',
-    url: 'https://github.com/jaychou-66/shuchiin-academy', date: '08-14 16:27',
+    url: 'https://github.com/jaychou-66/shuchiin-academy', date: '08-14 16:40',
     zh: {
-      cat: '企业知识检索 / 设计记录', status: '第一阶段实施中',
-      title: '先把企业知识检索的输入和边界做对｜16:27｜Shuchiin Academy 2.0',
-      excerpt: '今天没有把“RAG”当成单一向量库来做，而是先确定三类问题的路由边界、文档进入知识库前的标准化方式，以及检索不到证据时系统必须停止编造的规则。',
+      cat: '路由决策 / 数据血缘', status: '第一阶段设计完成',
+      title: '企业知识智能体的路由决策与数据血缘设计｜16:40｜Shuchiin Academy 2.0',
+      excerpt: '本次记录聚焦两个问题：Router 不是靠感觉固定选路，而要用标注数据校准三类决策；企业知识也不能只靠向量相似度，必须保留“这条结论从哪份文件、哪个版本、哪一页来的”的可追溯关系。',
       sections: [
-        { h: '问题：企业数据并不都该进向量库', p: 'SAP、CRM、OA 里的项目编号、合同编号、状态和日期本来就是结构化字段，应保留在关系数据库并建立普通索引；PDF、SOP、合同扫描件等非结构化材料才需要解析、切块和向量化。把所有内容先转成长文本再塞进向量库，会丢掉精确筛选和跨系统关联能力。' },
-        { h: '做法：文件进入前先生成可复核的元数据', p: '每份文件保留 document_id、来源系统、版本、生效状态、页码、项目或供应商 ID；实体和关系单独存为“带证据的边”，例如“合同 C001 —关联项目→ P001”，并记录证据页和版本。Chunk 只携带必要的筛选字段和 document_id，而不是把整份 JSON 重复塞进每个块。' },
-        { h: '做法：三层检索而不是一次 Top-K', p: '第一步按项目 ID、文档状态、日期等元数据过滤；第二步同时跑关键词/全文检索与向量检索；第三步用融合排序选出可引用的段落。这样“编号和字段”的精确问题不会被语义相似度误导，“制度解释”类问题也不会只依赖关键词。嵌入层计划使用本地 BGE-M3 + FAISS，生成与路由接口统一指向本地 Qwen。' },
-        { h: '边界：路由正确不等于知识库有答案', p: 'CEO Router 先分 DIRECT、INTERNAL_RETRIEVAL、EXTERNAL_RESEARCH。若内部检索路由正确，但数据库与文档库没有足够证据，系统输出“内部资料不足，无法确认”，而不是悄悄转成 DIRECT。后续评测除 macro-F1 外，要特别盯 INTERNAL_RETRIEVAL 的 recall：漏掉这一类会直接带来企业事实的幻觉风险。' },
-        { h: '下一步：可重复的最小实验', p: '先用少量可公开引用的文档建立一个演示库：标准化元数据 → 按标题/段落/句子边界切块 → SQLite/FTS 精确检索 → BGE-M3/FAISS 语义检索 → 人工标注问题和证据。每一步都保留输入、输出和评测集，后面再讨论 GraphRAG 与路由权重，而不是一开始就堆叠 Agent。' },
+        { h: '重点一：Router 的“权重”究竟是什么', p: 'Qwen 先给 DIRECT、INTERNAL_RETRIEVAL、EXTERNAL_RESEARCH 三类原始分数，例如 0.5、0.3、0.2。收集约 600 条人工标注问题后，不直接重训 Qwen，而是在输出端训练一个很小的校准层：new_score = softmax(W × raw_score + b)。W 和 b 就是会被学习到的决策权重，它能把原本偏向 DIRECT 的输出校正为更谨慎的内部检索或外部调研。' },
+        { h: '重点一的评测与边界', p: '先建立可重复的三分类测试集，输出 confusion matrix、每一类 precision、recall、F1，以及 macro/weighted F1。企业场景中最危险的是把应查内部资料的问题错分为 DIRECT，因此 INTERNAL_RETRIEVAL 的 recall 要单独监控。还有一条硬规则：即使 Router 正确选择内部检索，若数据库与文档库找不到足够证据，也必须返回“内部资料不足，无法确认”，不能降级为模型凭常识回答。' },
+        { h: '重点二：数据血缘不是“向量靠近”', p: '向量只能表示文本语义相近，不能证明事实关系。数据血缘要以可核验的结构存下来：document_id、来源系统、版本、生效状态、页码、项目 ID、实体和关系。关系写成带证据的三元组，例如“合同 C001 —关联项目→ P001”，并附上证据页和文件版本；这样 LLM 与人都能追问这条边从哪里来。' },
+        { h: '重点二的落地方式', p: '每个进入知识库的文件先由 LLM 按 JSON 规范提取标题、实体、关联 ID、版本和候选关系；关键关系进入 relation 表，并保留人工复核状态。Chunk 不复制整份 JSON，只带 document_id、页码、版本、项目 ID 等必要元数据；检索命中 Chunk 后，再通过 document_id 查回完整 JSON 和证据关系。这就是“文件—元数据—Chunk—关系边”的闭环。' },
+        { h: '下一步：先做最小可验证实验', p: '先以本地 Qwen 做 Router 推理，保存三类原始分数和人工标签；再用固定训练/验证/测试划分训练校准层。知识库侧先选少量文件，完成 JSON 标准化、段落/句子边界切块与带证据关系表。GraphRAG 放在后面：它应从已验证的关系边取局部子图，再取回相关 Chunk，而不是把“向量相近”直接当成事实边。' },
       ],
     },
     en: {
-      cat: 'Enterprise Retrieval / Design Log', status: 'Phase one in progress',
-      title: 'Get the inputs and boundaries right first | 16:27 | Shuchiin Academy 2.0',
-      excerpt: 'The first step is not a vector database: it is routing boundaries, normalized evidence, and an explicit no-evidence outcome.',
+      cat: 'Routing / Data Lineage', status: 'Phase-one design complete',
+      title: 'Routing decisions and data lineage for enterprise agents | 16:40 | Shuchiin Academy 2.0',
+      excerpt: 'Two core decisions: calibrate router choices with labels, and retain evidence-backed lineage instead of treating vector proximity as fact.',
       sections: [
-        { h: 'Problem', p: 'Structured business fields belong in a relational store; documents need parsing, chunking, and vectors.' },
-        { h: 'Metadata', p: 'Every document retains source, version, status, pages, IDs, and evidence-backed relations.' },
-        { h: 'Retrieval', p: 'Metadata filtering, keyword/FTS and vector search are fused instead of relying on one Top-K call.' },
-        { h: 'Boundary', p: 'Correct routing does not prove coverage. Missing internal evidence must produce an explicit insufficient-evidence result.' },
-        { h: 'Next', p: 'Build a small reproducible corpus and evaluation set before adding GraphRAG or learned router weights.' },
+        { h: 'Router weights', p: 'A small calibration layer learns W and b over Qwen’s three raw route scores, after labelled examples are collected.' },
+        { h: 'Evaluation boundary', p: 'Track per-class metrics, especially INTERNAL_RETRIEVAL recall. Missing internal evidence must stop the answer.' },
+        { h: 'Lineage', p: 'Vectors signal semantic similarity, not evidence. Facts require source, version, page, entities, and evidence-backed relations.' },
+        { h: 'Implementation', p: 'Normalize documents to JSON, store reviewed relation records, and let chunks carry only selective metadata plus document IDs.' },
+        { h: 'Next', p: 'Validate the small router and evidence corpus before adding GraphRAG.' },
       ],
     },
   },
@@ -87,7 +87,7 @@ const SYSTEMS = [
 ];
 
 const TIMELINE = [
-  { year: '08.14', zh: { t: 'Shuchiin Academy 2.0：知识检索设计', d: '确定企业知识库的元数据、混合检索、三类路由与“证据不足即停止回答”的第一阶段边界。' }, en: { t: 'Shuchiin Academy 2.0: retrieval design', d: 'Defined the first-phase boundary: metadata, hybrid retrieval, three routes, and an explicit insufficient-evidence outcome.' } },
+  { year: '08.14', zh: { t: 'Shuchiin Academy 2.0：路由决策与数据血缘', d: '确定三类路由的后续校准评测方式，以及以 JSON、关系表和证据页保存企业知识血缘的第一阶段方案。' }, en: { t: 'Shuchiin Academy 2.0: routing and lineage', d: 'Defined router calibration evaluation and evidence-backed JSON/relation records for enterprise knowledge lineage.' } },
   { year: '2025.07', zh: { t: '多智能体文献地图', d: '完成 67 篇论文的主题整理，并建立从协作框架到推理聚合的阅读路径。' }, en: { t: 'Multi-agent research map', d: 'Organized 67 papers into a reading path from collaboration frameworks to reasoning aggregation.' } },
   { year: '近期', zh: { t: 'Gaussian 异常检测基线', d: '完成特征诊断、闭式解训练、ε 搜索与 5-Fold 交叉验证。' }, en: { t: 'Gaussian anomaly baseline', d: 'Completed feature diagnosis, closed-form fitting, ε search, and five-fold cross-validation.' } },
   { year: '当前', zh: { t: 'AI 工程笔记公开发布', d: '用可追溯的项目记录替代泛泛总结，持续沉淀具体工程判断。' }, en: { t: 'Notes site published', d: 'A public home for traceable project records and concrete engineering decisions.' } },
