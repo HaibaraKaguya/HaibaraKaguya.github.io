@@ -570,19 +570,18 @@ html.js [data-reveal].is-in { opacity: 1; transform: none; }
 .notes-grid {
   max-width: var(--maxw);
   margin: 0 auto;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(1.25rem, 3vw, 2.4rem);
-  align-items: start;
+  display: block;
+  border-top: 1px solid var(--line);
 }
 
 .note-card {
   position: relative;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  padding: clamp(1.4rem, 2.4vw, 2rem);
-  transition: border-color 0.3s var(--ease), transform 0.35s var(--ease), background 0.3s var(--ease);
-  overflow: hidden;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 1.25rem;
+  transition: border-color 0.25s var(--ease), background 0.25s var(--ease);
+  overflow: visible;
 }
 .note-card::before {
   content: "";
@@ -592,14 +591,14 @@ html.js [data-reveal].is-in { opacity: 1; transform: none; }
   background: linear-gradient(90deg, var(--accent, var(--crimson)), transparent 70%);
 }
 /* 最新笔记作为完整入口；其余笔记保持等宽，避免旧的错位拼贴切碎内容。 */
-.note-card:first-child { grid-column: 1 / -1; }
+.note-card:first-child { grid-column: auto; }
 
 .note-card:hover,
 .note-card:focus-within {
   border-color: var(--accent, var(--crimson));
   background: #16161b;
 }
-.note-card:hover { transform: translateY(-5px); }
+.note-card:hover { transform: none; }
 
 .note-open {
   position: absolute;
@@ -682,6 +681,35 @@ html.js [data-reveal].is-in { opacity: 1; transform: none; }
   color: var(--muted);
 }
 .note-repo::before { content: "↗ "; color: var(--accent, var(--crimson)); }
+
+/* Notes 是目录而非海报墙：一条一行、最多七条为一页，正文在打开后阅读。 */
+.note-body {
+  display: grid;
+  grid-template-columns: 12rem minmax(0, 1fr) 11rem;
+  align-items: center;
+  gap: 1.25rem;
+}
+.note-topline { margin: 0; justify-content: flex-start; }
+.note-cat { white-space: normal; }
+.note-title { margin: 0; font-size: clamp(1rem, 1.6vw, 1.22rem); }
+.note-title-en, .note-excerpt { display: none; }
+.note-foot { padding: 0; border: 0; justify-content: flex-end; }
+.note-repo { display: none; }
+.notes-pagination {
+  max-width: var(--maxw);
+  margin: 1.5rem auto 0;
+  display: flex;
+  gap: 0.5rem;
+}
+.notes-page {
+  width: 2.35rem;
+  height: 2.35rem;
+  border: 1px solid var(--line);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+.notes-page:hover, .notes-page.is-current { color: var(--paper); border-color: var(--crimson); background: rgba(216, 32, 44, 0.14); }
 
 /* ============================== SYSTEMS ============================== */
 
@@ -1117,8 +1145,8 @@ html.js [data-reveal].is-in { opacity: 1; transform: none; }
 @media (max-width: 860px) {
   .site-nav { display: none; }
 
-  .notes-grid { grid-template-columns: 1fr; }
-  .note-card:first-child { grid-column: auto; }
+  .note-body { grid-template-columns: 8rem minmax(0, 1fr); }
+  .note-foot { display: none; }
 
   .systems-grid { grid-template-columns: 1fr; }
   .sys-name { word-break: normal; }
