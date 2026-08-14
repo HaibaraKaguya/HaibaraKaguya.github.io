@@ -2,6 +2,34 @@ document.documentElement.classList.add('js');
 
 const NOTES = [
   {
+    id: '03', accent: '#d8202c', repo: 'Shuchiin Academy 2.0',
+    url: 'https://github.com/jaychou-66/shuchiin-academy', date: '08-14 16:27',
+    zh: {
+      cat: '企业知识检索 / 设计记录', status: '第一阶段实施中',
+      title: '先把企业知识检索的输入和边界做对｜16:27｜Shuchiin Academy 2.0',
+      excerpt: '今天没有把“RAG”当成单一向量库来做，而是先确定三类问题的路由边界、文档进入知识库前的标准化方式，以及检索不到证据时系统必须停止编造的规则。',
+      sections: [
+        { h: '问题：企业数据并不都该进向量库', p: 'SAP、CRM、OA 里的项目编号、合同编号、状态和日期本来就是结构化字段，应保留在关系数据库并建立普通索引；PDF、SOP、合同扫描件等非结构化材料才需要解析、切块和向量化。把所有内容先转成长文本再塞进向量库，会丢掉精确筛选和跨系统关联能力。' },
+        { h: '做法：文件进入前先生成可复核的元数据', p: '每份文件保留 document_id、来源系统、版本、生效状态、页码、项目或供应商 ID；实体和关系单独存为“带证据的边”，例如“合同 C001 —关联项目→ P001”，并记录证据页和版本。Chunk 只携带必要的筛选字段和 document_id，而不是把整份 JSON 重复塞进每个块。' },
+        { h: '做法：三层检索而不是一次 Top-K', p: '第一步按项目 ID、文档状态、日期等元数据过滤；第二步同时跑关键词/全文检索与向量检索；第三步用融合排序选出可引用的段落。这样“编号和字段”的精确问题不会被语义相似度误导，“制度解释”类问题也不会只依赖关键词。嵌入层计划使用本地 BGE-M3 + FAISS，生成与路由接口统一指向本地 Qwen。' },
+        { h: '边界：路由正确不等于知识库有答案', p: 'CEO Router 先分 DIRECT、INTERNAL_RETRIEVAL、EXTERNAL_RESEARCH。若内部检索路由正确，但数据库与文档库没有足够证据，系统输出“内部资料不足，无法确认”，而不是悄悄转成 DIRECT。后续评测除 macro-F1 外，要特别盯 INTERNAL_RETRIEVAL 的 recall：漏掉这一类会直接带来企业事实的幻觉风险。' },
+        { h: '下一步：可重复的最小实验', p: '先用少量可公开引用的文档建立一个演示库：标准化元数据 → 按标题/段落/句子边界切块 → SQLite/FTS 精确检索 → BGE-M3/FAISS 语义检索 → 人工标注问题和证据。每一步都保留输入、输出和评测集，后面再讨论 GraphRAG 与路由权重，而不是一开始就堆叠 Agent。' },
+      ],
+    },
+    en: {
+      cat: 'Enterprise Retrieval / Design Log', status: 'Phase one in progress',
+      title: 'Get the inputs and boundaries right first | 16:27 | Shuchiin Academy 2.0',
+      excerpt: 'The first step is not a vector database: it is routing boundaries, normalized evidence, and an explicit no-evidence outcome.',
+      sections: [
+        { h: 'Problem', p: 'Structured business fields belong in a relational store; documents need parsing, chunking, and vectors.' },
+        { h: 'Metadata', p: 'Every document retains source, version, status, pages, IDs, and evidence-backed relations.' },
+        { h: 'Retrieval', p: 'Metadata filtering, keyword/FTS and vector search are fused instead of relying on one Top-K call.' },
+        { h: 'Boundary', p: 'Correct routing does not prove coverage. Missing internal evidence must produce an explicit insufficient-evidence result.' },
+        { h: 'Next', p: 'Build a small reproducible corpus and evaluation set before adding GraphRAG or learned router weights.' },
+      ],
+    },
+  },
+  {
     id: '01', accent: '#3affd6', repo: 'multi-agent / research corpus',
     url: 'https://github.com/HaibaraKaguya', date: '2025-07-09',
     zh: {
@@ -52,12 +80,14 @@ const NOTES = [
 ];
 
 const SYSTEMS = [
+  { name: 'Shuchiin Academy 2.0', accent: '#d8202c', url: 'https://github.com/jaychou-66/shuchiin-academy', tags: ['RAG', 'Qwen', 'Evaluation'], zh: { d: '面向企业知识检索的多智能体实验：路由评测、元数据血缘、混合检索与证据审查。' }, en: { d: 'An enterprise knowledge-retrieval experiment: routing evaluation, evidence lineage, hybrid search, and review.' } },
   { name: 'multi-agent / research corpus', accent: '#3affd6', url: 'https://github.com/HaibaraKaguya', tags: ['LLM', 'Agents', 'Papers'], zh: { d: '67 篇多智能体、推理增强与对齐方向论文的研究索引。' }, en: { d: 'A research index of 67 papers on agents, reasoning, and alignment.' } },
   { name: 'Network-Anomaly-Detection', accent: '#d8202c', url: 'https://github.com/HaibaraKaguya/Network-Anomaly-Detection', tags: ['Python', 'ML', 'Gaussian'], zh: { d: '从概率模型、特征转换到阈值验证的网络流量异常检测实验。' }, en: { d: 'Network-traffic anomaly detection from probability model to threshold validation.' } },
   { name: 'CIFAR10-ResNet-Experiments', accent: '#ece6d8', url: 'https://github.com/HaibaraKaguya/CIFAR10-ResNet-Experiments', tags: ['TensorFlow', 'CNN', 'ResNet'], zh: { d: '可配置的 CIFAR-10 CNN / ResNet 实验框架，覆盖四种拓扑与 CPU/GPU 基准。' }, en: { d: 'Configurable CIFAR-10 CNN / ResNet experiments with four topologies and CPU/GPU benchmarking.' } },
 ];
 
 const TIMELINE = [
+  { year: '08.14', zh: { t: 'Shuchiin Academy 2.0：知识检索设计', d: '确定企业知识库的元数据、混合检索、三类路由与“证据不足即停止回答”的第一阶段边界。' }, en: { t: 'Shuchiin Academy 2.0: retrieval design', d: 'Defined the first-phase boundary: metadata, hybrid retrieval, three routes, and an explicit insufficient-evidence outcome.' } },
   { year: '2025.07', zh: { t: '多智能体文献地图', d: '完成 67 篇论文的主题整理，并建立从协作框架到推理聚合的阅读路径。' }, en: { t: 'Multi-agent research map', d: 'Organized 67 papers into a reading path from collaboration frameworks to reasoning aggregation.' } },
   { year: '近期', zh: { t: 'Gaussian 异常检测基线', d: '完成特征诊断、闭式解训练、ε 搜索与 5-Fold 交叉验证。' }, en: { t: 'Gaussian anomaly baseline', d: 'Completed feature diagnosis, closed-form fitting, ε search, and five-fold cross-validation.' } },
   { year: '当前', zh: { t: 'AI 工程笔记公开发布', d: '用可追溯的项目记录替代泛泛总结，持续沉淀具体工程判断。' }, en: { t: 'Notes site published', d: 'A public home for traceable project records and concrete engineering decisions.' } },
