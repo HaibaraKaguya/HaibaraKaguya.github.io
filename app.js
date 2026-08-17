@@ -2,6 +2,38 @@ document.documentElement.classList.add('js');
 
 const NOTES = [
   {
+    id: '04', accent: '#3affd6', repo: 'Shuchiin Academy 2.0',
+    url: 'https://github.com/jaychou-66/shuchiin-academy', date: '08-17 16:40',
+    zh: {
+      cat: '论文知识检索 / 混合检索与精排', status: '检索链路可用，精排评测待启动',
+      title: '构建可审计的混合检索链路与精排实验边界｜16:40｜Shuchiin Academy 2.0',
+      excerpt: '本阶段将项目收敛为一条可验证的内部检索路径：BM25 与 BGE-M3 并行召回，经 RRF 融合、图关系补充后交由本地 Qwen 生成带证据的回答；精排器已预留接口，但尚未以未经评测的模型替代现有排序。',
+      sections: [
+        { h: '阶段目标：先跑通一条可审计的内部检索路径', p: '当前不扩展多 Agent，也不继续 CEO Router 训练，而是固定一条能逐步检查的链路：用户问题 → 查询理解 → BM25 与 BGE-M3 并行召回 → RRF 融合 → 图关系补充 → 本地 Qwen 基于证据作答。论文知识库与会话记录数据库保持分离，避免“检索事实”与“用户对话”混入同一张数据表。现有论文库包含 50 篇论文、2,749 个 Chunk、408 个图节点和 953 条关系边。' },
+        { h: 'RRF 的定位：它是粗排基线，不是最终真理', p: 'BM25 负责词面匹配，BGE-M3 负责语义匹配；两路结果以 Reciprocal Rank Fusion 合并。当前 BM25 权重与 BGE-M3 权重均设为 1，k=60，目的是先取得可复现、不过度偏向任一路的实验起点。不能因单个问题看似更好就修改权重；后续只能在固定验证集上，以 Recall@K、MRR 与 nDCG 比较不同权重和候选数量，再锁定参数。' },
+        { h: 'GraphRAG 与数据血缘：相关，但不是同一件事', p: '数据血缘回答“这段内容从哪里来、经过什么处理、能否追溯”；GraphRAG 回答“问题中的实体和关系怎样帮助我取回更相关的证据”。本项目把论文、Chunk、实体和带证据的关系边写入 SQLite：关系边可回链到论文和 Chunk，既可用于局部子图检索，也可让回答展示证据来源。JSON 元数据是关系抽取与溯源的载体，但 JSON 本身并不等于 GraphRAG。' },
+        { h: '查询理解的修正：先理解术语，再检索证据', p: '用户问题中的拼写或口语表达会在检索前进行术语归一，例如 grapgrag 归为 GraphRAG，血缘关系映射为 data lineage / provenance。系统不再把“血缘”按字面翻译成生物学 bloodline；若缺乏直接证据，也会明确说明“材料不足”，而不是用看似流畅的文字补全结论。图关系结果应以“实体—关系—实体—论文证据”的形式呈现，供用户复核。' },
+        { h: 'Reranker 的真实状态：接口完成，但不虚报效果', p: '精排结构已接入为：BM25 + BGE-M3 → RRF Top20 → Reranker → Top5 → Qwen，并保留 rrf_rank、reranker_score、final_rank 三类字段。由于本地 cross-encoder 尚未安装和验证，Reranker 当前安全停用；实际运行的是 BM25 + BGE-M3 + RRF → Top5 → Qwen。因此现阶段不能声称“精排已经提升效果”，只能说工程接口与可观察字段已经就位。' },
+        { h: '实验边界校正：数据集划分应服务于检索与精排', p: '此前曾误将训练、验证、测试集的讨论落到 CEO Router 分类任务；其训练原则本身有效，但并非当前研究重点。现在应将同一套原则转用于检索：每条样本记录 question、positive_chunk_ids 与 hard_negative_chunk_ids，严格分为训练集、验证集和测试集。训练集用于拟合精排模型，验证集用于选 RRF 权重、candidate K 与阈值，测试集在所有选择冻结后只使用一次。' },
+        { h: '当前验证与下一步', p: '当前混合检索、图关系补充、本地 Qwen 调用和网页证据展示均可运行；候选数量参数已生效，测试套件通过 269 项。下一步不是立刻训练，而是先构建人工可审核的检索评测集：标注正确 Chunk 与困难负例，获得不含 Reranker 的基线指标；随后部署独立精排模型，在相同测试集上比较 Recall@5、MRR、nDCG 与回答的证据一致性。先证明“取回并排对证据”，再讨论“回答写得是否更好”。' },
+      ],
+    },
+    en: {
+      cat: 'Paper Retrieval / Hybrid Search and Reranking', status: 'Retrieval path working; reranking evaluation pending',
+      title: 'An auditable hybrid-retrieval path and the boundary of reranking experiments | 16:40 | Shuchiin Academy 2.0',
+      excerpt: 'The project is deliberately narrowed to an auditable internal retrieval path: BM25 and BGE-M3 retrieval, RRF fusion, graph-evidence enrichment, and local-Qwen grounded answers.',
+      sections: [
+        { h: 'A single auditable path first', p: 'The active path is query understanding, parallel BM25/BGE-M3 retrieval, RRF, graph evidence, and a grounded local-Qwen answer. The paper knowledge base and chat-history database remain separate.' },
+        { h: 'RRF is a coarse-ranking baseline', p: 'Equal BM25 and BGE-M3 weights with k=60 are a reproducible starting point. Weight selection must be made on a held-out validation set with Recall@K, MRR, and nDCG.' },
+        { h: 'GraphRAG and lineage are related but distinct', p: 'Lineage tracks origin and processing. GraphRAG uses evidence-backed entities and relations to retrieve a relevant local subgraph. JSON carries metadata; it is not GraphRAG by itself.' },
+        { h: 'Normalize the query before retrieval', p: 'Terms such as grapgrag are normalized to GraphRAG, and lineage is mapped to data lineage/provenance. Unsupported claims must remain unsupported.' },
+        { h: 'Reranker status', p: 'The pipeline exposes RRF rank, reranker score, and final rank, but the local cross-encoder is not installed or validated. Reranking is therefore safely disabled; no gain is claimed.' },
+        { h: 'Evaluation boundary', p: 'Train/validation/test splits now belong to retrieval and reranking evaluation, with positive chunks and hard negatives—not to the currently out-of-scope router experiment.' },
+        { h: 'Next', p: 'Build a reviewable retrieval set, establish the no-reranker baseline, then compare reranking with Recall@5, MRR, nDCG, and evidence consistency on a frozen test set.' },
+      ],
+    },
+  },
+  {
     id: '03', accent: '#d8202c', repo: 'Shuchiin Academy 2.0',
     url: 'https://github.com/jaychou-66/shuchiin-academy', date: '08-14 16:50',
     zh: {
@@ -87,6 +119,7 @@ const SYSTEMS = [
 ];
 
 const TIMELINE = [
+  { year: '08.17', zh: { t: 'Shuchiin Academy 2.0：混合检索与可审计精排', d: '完成 BM25、BGE-M3、RRF 与图关系补充的单链路验证；明确精排器需先通过独立评测，才可声称带来改进。' }, en: { t: 'Shuchiin Academy 2.0: hybrid retrieval and auditable reranking', d: 'Validated a single path combining BM25, BGE-M3, RRF, and graph evidence; reranking must be independently evaluated before any gain is claimed.' } },
   { year: '08.14', zh: { t: 'Shuchiin Academy 2.0：路由决策与数据血缘', d: '确定三类路由的后续校准评测方式，以及以 JSON、关系表和证据页保存企业知识血缘的第一阶段方案。' }, en: { t: 'Shuchiin Academy 2.0: routing and lineage', d: 'Defined router calibration evaluation and evidence-backed JSON/relation records for enterprise knowledge lineage.' } },
   { year: '2025.07', zh: { t: '多智能体文献地图', d: '完成 67 篇论文的主题整理，并建立从协作框架到推理聚合的阅读路径。' }, en: { t: 'Multi-agent research map', d: 'Organized 67 papers into a reading path from collaboration frameworks to reasoning aggregation.' } },
   { year: '近期', zh: { t: 'Gaussian 异常检测基线', d: '完成特征诊断、闭式解训练、ε 搜索与 5-Fold 交叉验证。' }, en: { t: 'Gaussian anomaly baseline', d: 'Completed feature diagnosis, closed-form fitting, ε search, and five-fold cross-validation.' } },
