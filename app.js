@@ -14,8 +14,6 @@ const NOTES = [
         { h: 'GraphRAG 与数据血缘：相关，但不是同一件事', p: '数据血缘回答“这段内容从哪里来、经过什么处理、能否追溯”；GraphRAG 回答“问题中的实体和关系怎样帮助我取回更相关的证据”。本项目把论文、Chunk、实体和带证据的关系边写入 SQLite：关系边可回链到论文和 Chunk，既可用于局部子图检索，也可让回答展示证据来源。JSON 元数据是关系抽取与溯源的载体，但 JSON 本身并不等于 GraphRAG。' },
         { h: '查询理解的修正：先理解术语，再检索证据', p: '用户问题中的拼写或口语表达会在检索前进行术语归一，例如 grapgrag 归为 GraphRAG，血缘关系映射为 data lineage / provenance。系统不再把“血缘”按字面翻译成生物学 bloodline；若缺乏直接证据，也会明确说明“材料不足”，而不是用看似流畅的文字补全结论。图关系结果应以“实体—关系—实体—论文证据”的形式呈现，供用户复核。' },
         { h: 'Reranker 的真实状态：接口完成，但不虚报效果', p: '精排结构已接入为：BM25 + BGE-M3 → RRF Top20 → Reranker → Top5 → Qwen，并保留 rrf_rank、reranker_score、final_rank 三类字段。由于本地 cross-encoder 尚未安装和验证，Reranker 当前安全停用；实际运行的是 BM25 + BGE-M3 + RRF → Top5 → Qwen。因此现阶段不能声称“精排已经提升效果”，只能说工程接口与可观察字段已经就位。' },
-        { h: '实验边界校正：数据集划分应服务于检索与精排', p: '此前曾误将训练、验证、测试集的讨论落到 CEO Router 分类任务；其训练原则本身有效，但并非当前研究重点。现在应将同一套原则转用于检索：每条样本记录 question、positive_chunk_ids 与 hard_negative_chunk_ids，严格分为训练集、验证集和测试集。训练集用于拟合精排模型，验证集用于选 RRF 权重、candidate K 与阈值，测试集在所有选择冻结后只使用一次。' },
-        { h: '当前验证与下一步', p: '当前混合检索、图关系补充、本地 Qwen 调用和网页证据展示均可运行；候选数量参数已生效，测试套件通过 269 项。下一步不是立刻训练，而是先构建人工可审核的检索评测集：标注正确 Chunk 与困难负例，获得不含 Reranker 的基线指标；随后部署独立精排模型，在相同测试集上比较 Recall@5、MRR、nDCG 与回答的证据一致性。先证明“取回并排对证据”，再讨论“回答写得是否更好”。' },
       ],
     },
     en: {
@@ -28,8 +26,6 @@ const NOTES = [
         { h: 'GraphRAG and lineage are related but distinct', p: 'Lineage tracks origin and processing. GraphRAG uses evidence-backed entities and relations to retrieve a relevant local subgraph. JSON carries metadata; it is not GraphRAG by itself.' },
         { h: 'Normalize the query before retrieval', p: 'Terms such as grapgrag are normalized to GraphRAG, and lineage is mapped to data lineage/provenance. Unsupported claims must remain unsupported.' },
         { h: 'Reranker status', p: 'The pipeline exposes RRF rank, reranker score, and final rank, but the local cross-encoder is not installed or validated. Reranking is therefore safely disabled; no gain is claimed.' },
-        { h: 'Evaluation boundary', p: 'Train/validation/test splits now belong to retrieval and reranking evaluation, with positive chunks and hard negatives—not to the currently out-of-scope router experiment.' },
-        { h: 'Next', p: 'Build a reviewable retrieval set, establish the no-reranker baseline, then compare reranking with Recall@5, MRR, nDCG, and evidence consistency on a frozen test set.' },
       ],
     },
   },
