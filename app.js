@@ -2,6 +2,41 @@ document.documentElement.classList.add('js');
 
 const NOTES = [
   {
+    id: '07', zone: 'learning', order: 120, accent: '#3affd6', repo: 'Shuchiin Academy 2.0',
+    url: 'https://github.com/jaychou-66/shuchiin-academy', date: '08-26',
+    zh: {
+      cat: '学习 / DOM 事件与页面交互', status: '事件模型已建立',
+      title: 'DOM 事件、事件委托与页面交互模型｜08-26｜Shuchiin Academy 2.0',
+      excerpt: '用户操作由浏览器转换成事件，JavaScript 通过监听器接收事件，利用 target、currentTarget 和 closest 判断目标，再修改 DOM 与 CSS 状态，最终由浏览器重新渲染页面。',
+      sections: [
+        { h: '一、事件与监听器', p: '事件表示用户或浏览器发生的动作，例如 click、input、keydown、change、mousemove 和 mouseleave。addEventListener 的基本形式是 element.addEventListener("事件类型", 处理函数)：前面的元素决定监听谁，事件类型决定监听什么，处理函数决定发生后做什么。' },
+        { h: '二、输入框与键盘事件', p: '浏览器会把键盘动作转换成事件，并发送给当前获得焦点的输入框。keydown 关注按下了什么键，input 关注输入框内容是否变化。聊天输入框通常用 input 实时读取 input.value，用 keydown 判断 Enter 等特殊按键；两者不必每次同时监听。' },
+        { h: '三、事件对象与箭头函数', p: '浏览器调用事件处理函数时会自动传入 event。需要事件信息时声明 event 参数，不需要时可以写空参数箭头函数。若业务函数需要自定义参数而不是 event，就用箭头函数做中间层，例如点击按钮后读取 button.dataset.view，再调用 switchView(view)。' },
+        { h: '四、事件冒泡', p: 'HTML 元素可以嵌套。一次点击从实际目标开始，依次向父级传播到 button、card、chat-area、body 和 document，这叫事件冒泡。不是发生了多次点击，而是同一个事件被父元素依次看到。' },
+        { h: '五、target 与 currentTarget', p: 'event.target 是用户最初实际点击的元素，event.currentTarget 是当前正在执行监听器的元素。点击按钮里的 span 时，target 可能是 span；如果监听器绑定在 chat-area，currentTarget 就是 chat-area；如果监听器绑定在按钮，currentTarget 就是按钮。' },
+        { h: '六、事件委托', p: '事件委托是不为每个子按钮单独绑定监听器，而让共同的父元素统一监听。聊天区域中动态生成许多重试按钮时，chat-area 可以监听 click，再用 e.target.closest(".retry-btn") 找到最近的重试按钮并执行对应逻辑。它适合数量多、动态生成和结构相同的子元素；少量固定按钮直接监听更直观。' },
+        { h: '七、closest 的作用', p: 'closest() 从当前元素开始，向自己和父元素方向查找最近的匹配元素。用户点击按钮里的文字时，target 是 span，closest(".retry-btn") 可以向上找到真正的按钮。querySelector 是从上往下查找，closest 是从当前元素向上查找，找不到时返回 null。' },
+        { h: '八、识别具体消息', p: '事件委托只说明某类按钮被点击，还必须识别它属于哪条消息。消息卡片可以保存 data-message-id。处理流程是从 target 找到按钮，从按钮找到所属 card，再读取 card.dataset.messageId，从而确定要删除或重试的具体消息。稳定的消息 ID 比依赖元素位置更安全。' },
+        { h: '九、监听器不会自动替换', p: 'addEventListener() 表示增加一个监听器，不是替换旧监听器。如果每次重新渲染图表都创建新的箭头函数并绑定一次，那么一次鼠标移动可能触发多个旧处理函数。监听器通常应在初始化阶段绑定一次；需要移除时使用同一个函数引用调用 removeEventListener()。' },
+        { h: '十、渲染与事件的关系', p: '浏览器渲染是把 DOM 和 CSS 转换成屏幕画面；项目中的 render 函数通常是根据数据创建或更新 DOM。重新渲染页面内容不代表要重新绑定所有事件，数据更新和事件注册是两件事。' },
+        { h: '十一、与项目的完整联系', p: '用户在输入框中输入问题，JavaScript 通过 input.value 得到字符串，keydown 监听 Enter，submitQuestion() 处理提交，创建消息卡片并用 appendChild 插入 chat-area；重试、删除和复制按钮通过直接监听或事件委托处理，classList 切换加载状态，浏览器最后重新渲染页面。' },
+        { h: '十二、核心心智模型', p: '用户操作 → 浏览器产生事件 → 事件传播到监听器 → JavaScript 判断 target 和数据 ID → 执行业务逻辑 → 修改 DOM 和 CSS 状态 → 浏览器重新渲染页面。事件模型的重点不是背 API，而是理解事件从哪里开始、传播到哪里、由谁处理以及如何定位具体数据。' },
+      ],
+    },
+    en: {
+      cat: 'Learning / DOM Events and Page Interaction', status: 'Event model established',
+      title: 'DOM events, delegation, and the page-interaction model | 08-26 | Shuchiin Academy 2.0',
+      excerpt: 'Browser actions become events; JavaScript receives them through listeners, identifies targets with target, currentTarget, and closest, updates DOM and CSS state, and lets the browser render the result.',
+      sections: [
+        { h: 'Events and listeners', p: 'Events describe user or browser actions. addEventListener registers what to observe and what handler to run.' },
+        { h: 'Keyboard and input', p: 'keydown observes keys, while input observes changed field content. Use each according to the behavior required.' },
+        { h: 'Bubbling and targets', p: 'One event can travel from the original target through ancestors. target is where it began; currentTarget is the element whose listener is currently running.' },
+        { h: 'Delegation and closest', p: 'A parent can handle dynamic child buttons by inspecting event.target and using closest() to find the nearest matching control.' },
+        { h: 'Rendering and lifecycle', p: 'Rendering updates the visible result of DOM and CSS. Data re-rendering should not repeatedly register new listeners; bind stable listeners once or remove them with the same function reference.' },
+      ],
+    },
+  },
+  {
     id: '06', zone: 'learning', order: 110, accent: '#ece6d8', repo: 'Shuchiin Academy 2.0',
     url: 'https://github.com/jaychou-66/shuchiin-academy', date: '08-26',
     zh: {
@@ -221,6 +256,7 @@ const SYSTEMS = [
 ];
 
 const TIMELINE = [
+  { year: '08.26', zh: { t: '新增学习区：DOM 事件与事件委托', d: '整理键盘与输入事件、事件冒泡、target/currentTarget、closest、动态按钮委托和监听器生命周期。' }, en: { t: 'Learning section added: DOM events and delegation', d: 'Connected keyboard/input events, bubbling, target/currentTarget, closest, dynamic controls, and listener lifecycle.' } },
   { year: '08.26', zh: { t: '新增学习区：从 HTML 到 DOM 的浏览器交互模型', d: '整理 document、元素查找、事件监听、classList、文本安全与项目聊天界面的 DOM 更新链路。' }, en: { t: 'Learning section added: HTML-to-DOM interaction model', d: 'Connected document lookup, events, classList, text safety, and DOM updates in the chat interface.' } },
   { year: '08.26', zh: { t: '新增学习区：Promise、Response 与 FastAPI 通信模型', d: '将 fetch、HTTP 状态码、FastAPI 路由与文档分析请求整理为可迁移的前后端通信心智模型。' }, en: { t: 'Learning section added: Promise, Response, and FastAPI', d: 'Connected fetch, HTTP status codes, FastAPI routes, and document analysis into a reusable client-server model.' } },
   { year: '08.17', zh: { t: 'Shuchiin Academy 2.0：混合检索与可审计精排', d: '完成 BM25、BGE-M3、RRF 与图关系补充的单链路验证；明确精排器需先通过独立评测，才可声称带来改进。' }, en: { t: 'Shuchiin Academy 2.0: hybrid retrieval and auditable reranking', d: 'Validated a single path combining BM25, BGE-M3, RRF, and graph evidence; reranking must be independently evaluated before any gain is claimed.' } },
