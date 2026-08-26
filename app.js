@@ -2,6 +2,43 @@ document.documentElement.classList.add('js');
 
 const NOTES = [
   {
+    id: '06', zone: 'learning', order: 110, accent: '#ece6d8', repo: 'Shuchiin Academy 2.0',
+    url: 'https://github.com/jaychou-66/shuchiin-academy', date: '08-26',
+    zh: {
+      cat: '学习 / DOM 与浏览器页面交互', status: '基础模型已建立',
+      title: '从 HTML 到 DOM：JavaScript 如何操作网页｜08-26｜Shuchiin Academy 2.0',
+      excerpt: '浏览器把 HTML 文本解析成内存中的 DOM 对象结构，JavaScript 通过 document 查找、监听并修改这些对象，CSS 决定状态外观，浏览器负责重新渲染页面。',
+      sections: [
+        { h: '一、DOM 到底是什么', p: '浏览器加载网页时接收到的是 HTML 文本，随后解析标签并在内存中建立对象树，这就是 DOM。HTML 是服务器传来的文本，DOM 是浏览器内存中的对象结构，document 是访问当前页面 DOM 的入口。DOM 不是另存出来的文本文件。' },
+        { h: '二、如何查找 DOM 元素', p: 'getElementById() 按唯一 id 查找元素，找到后返回元素对象，找不到返回 null。querySelector() 使用 CSS 选择器查找第一个匹配元素，querySelectorAll() 查找全部匹配元素。常见选择器包括 #name、.item、button，以及在 A 内部查找 B 的 A B。' },
+        { h: '三、id、class 与 data 属性', p: 'id 应该唯一，像身份证号；class 可以重复，表示一组具有相同用途或样式的元素；data-action 等 data-* 属性可以记录具体业务动作。少量按钮可用不同 id，大量相似按钮可用相同 class 并通过 data 属性区分。' },
+        { h: '四、querySelectorAll 与 forEach', p: 'querySelectorAll() 找到的是一组元素，不是单个按钮。forEach() 再把元素一个一个取出并执行相同操作，例如统一禁用导航按钮、绑定点击事件或修改样式。找到元素和处理元素是两个不同步骤。' },
+        { h: '五、textContent 与 value', p: '普通标签中的文字使用 textContent，输入框中的当前输入使用 value。value 不是 JavaScript 随便起的名字，而是输入类元素提供的属性。用户在输入框中键盘输入后，通常通过 input.value 得到一个字符串。' },
+        { h: '六、innerHTML 与用户输入安全', p: 'innerHTML 会把字符串当 HTML 解析，标签可能真正生效；textContent 会把字符串作为普通文字显示。用户输入、聊天消息和评论内容优先使用 textContent。escapeHtml() 会将 <、> 等特殊符号转义成实体，保留显示效果但取消标签执行意义，从而降低 XSS 风险。' },
+        { h: '七、创建和插入元素', p: 'createElement() 创建一个 DOM 元素，className 或 classList 设置它的 CSS 类，appendChild() 把它插入父元素。appendChild() 不会自动产生 card 或 assistant；如果元素之前设置了 class="card assistant"，插入后才会显示为 div.card.assistant。' },
+        { h: '八、classList 与 CSS 状态', p: 'JavaScript 负责切换状态名称，CSS 负责决定状态的颜色、动画和布局。classList.add() 添加状态，remove() 删除状态，toggle() 无第二参数时有则删、无则加，contains() 检查状态是否存在。toggle("active", isRunning) 则会根据布尔值强制添加或删除 active。' },
+        { h: '九、监听用户操作', p: 'button 标签只提供可点击控件，不会自动执行业务代码。先用 getElementById() 找到按钮，再用 addEventListener("click", handler) 登记点击处理函数。getElementById 负责“找到谁”，addEventListener 负责“发生什么时做什么”。' },
+        { h: '十、区分不同按钮', p: '可以为按钮设置不同 id，并分别绑定保存、删除和跳转逻辑；也可以让按钮共享 action-btn class，再用 data-action="save" 等属性记录具体动作，由 JavaScript 读取 button.dataset.action 后分支处理。' },
+        { h: '十一、页面跳转', p: '普通页面跳转适合使用 <a href="/next.html">，因为链接本身就是导航元素。如果点击时还要先执行 JavaScript，则可以监听 click，再设置 window.location.href。' },
+        { h: '十二、与项目的联系', p: '项目中的 index.html 提供页面骨架，浏览器解析后形成 DOM；app.js 通过 document 找到 chat-area、session-list 和按钮；用户点击后由事件监听器执行逻辑；JavaScript 再修改 textContent、value、classList 或 DOM 结构，浏览器最后更新页面显示。' },
+        { h: '十三、聊天消息的完整链路', p: '用户在输入框键盘输入内容，JavaScript 通过 input.value 得到字符串，创建消息卡片，设置 card、user 或 assistant 等 class，再用 appendChild 放入 chat-area；CSS 决定消息气泡的颜色和布局。用户内容应作为文本处理，页面结构才作为 HTML 处理。' },
+        { h: '十四、核心心智模型', p: 'DOM 这一节的主线是：找到 DOM，监听事件，修改 DOM，浏览器重新显示页面。JavaScript 通过 document 操作浏览器根据 HTML 创建的 DOM 对象，CSS 决定修改后的外观，浏览器负责最终渲染到屏幕上。' },
+      ],
+    },
+    en: {
+      cat: 'Learning / DOM and Browser Interaction', status: 'Core model established',
+      title: 'From HTML to the DOM: how JavaScript operates a webpage | 08-26 | Shuchiin Academy 2.0',
+      excerpt: 'The browser parses HTML text into an in-memory DOM object tree. JavaScript finds, listens to, and modifies those objects through document; CSS controls appearance and the browser re-renders the result.',
+      sections: [
+        { h: 'The DOM model', p: 'HTML arrives as text. The browser parses it into an in-memory object tree called the DOM. document is the entry point; the DOM is not a separate text file.' },
+        { h: 'Finding elements', p: 'getElementById finds one unique id. querySelector finds the first CSS-selector match. querySelectorAll finds all matches and is commonly paired with forEach.' },
+        { h: 'Content and safety', p: 'Use textContent for ordinary text and value for current input values. innerHTML parses markup, so user input should not be inserted into it without escaping or sanitizing.' },
+        { h: 'State and events', p: 'classList toggles CSS state names while CSS defines their appearance. getElementById finds the target; addEventListener defines what happens on click or another event.' },
+        { h: 'Project flow', p: 'The project HTML provides the skeleton, app.js finds DOM nodes, user events run handlers, JavaScript updates text, classes, and structure, and the browser renders the result.' },
+      ],
+    },
+  },
+  {
     id: '05', zone: 'project', order: 90, accent: '#3affd6', repo: 'Shuchiin Academy 2.0',
     url: 'https://github.com/jaychou-66/shuchiin-academy', date: '08-17 16:40',
     zh: {
@@ -184,6 +221,7 @@ const SYSTEMS = [
 ];
 
 const TIMELINE = [
+  { year: '08.26', zh: { t: '新增学习区：从 HTML 到 DOM 的浏览器交互模型', d: '整理 document、元素查找、事件监听、classList、文本安全与项目聊天界面的 DOM 更新链路。' }, en: { t: 'Learning section added: HTML-to-DOM interaction model', d: 'Connected document lookup, events, classList, text safety, and DOM updates in the chat interface.' } },
   { year: '08.26', zh: { t: '新增学习区：Promise、Response 与 FastAPI 通信模型', d: '将 fetch、HTTP 状态码、FastAPI 路由与文档分析请求整理为可迁移的前后端通信心智模型。' }, en: { t: 'Learning section added: Promise, Response, and FastAPI', d: 'Connected fetch, HTTP status codes, FastAPI routes, and document analysis into a reusable client-server model.' } },
   { year: '08.17', zh: { t: 'Shuchiin Academy 2.0：混合检索与可审计精排', d: '完成 BM25、BGE-M3、RRF 与图关系补充的单链路验证；明确精排器需先通过独立评测，才可声称带来改进。' }, en: { t: 'Shuchiin Academy 2.0: hybrid retrieval and auditable reranking', d: 'Validated a single path combining BM25, BGE-M3, RRF, and graph evidence; reranking must be independently evaluated before any gain is claimed.' } },
   { year: '08.14', zh: { t: 'Shuchiin Academy 2.0：路由决策与数据血缘', d: '确定三类路由的后续校准评测方式，以及以 JSON、关系表和证据页保存企业知识血缘的第一阶段方案。' }, en: { t: 'Shuchiin Academy 2.0: routing and lineage', d: 'Defined router calibration evaluation and evidence-backed JSON/relation records for enterprise knowledge lineage.' } },
