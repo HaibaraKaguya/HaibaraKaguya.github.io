@@ -88,8 +88,21 @@
         <p class="section-lead" data-i18n="notes.lead">一条笔记只处理一个具体工程问题：发生了什么、如何判断、当前结论是什么。</p>
       </header>
 
-      <div class="notes-grid" id="notes-grid" aria-live="polite">
-        <!-- 由 app.js 渲染 -->
+      <div class="notes-zone" aria-labelledby="project-notes-title">
+        <div class="notes-zone-head">
+          <p class="notes-zone-kicker">01A — PROJECT ENGINEERING</p>
+          <h3 class="notes-zone-title" id="project-notes-title">项目工程区</h3>
+          <p class="notes-zone-lead">记录已经发生的项目设计、实现状态、验证边界与工程判断。</p>
+        </div>
+        <div class="notes-grid" id="project-notes-grid" aria-live="polite"></div>
+      </div>
+      <div class="notes-zone" aria-labelledby="learning-notes-title">
+        <div class="notes-zone-head">
+          <p class="notes-zone-kicker">01B — LEARNING</p>
+          <h3 class="notes-zone-title" id="learning-notes-title">学习区</h3>
+          <p class="notes-zone-lead">把学习中的核心概念连接到真实项目，形成可迁移的技术心智模型。</p>
+        </div>
+        <div class="notes-grid" id="learning-notes-grid" aria-live="polite"></div>
       </div>
       <nav class="notes-pagination" id="notes-pagination" aria-label="笔记分页"></nav>
     </section>

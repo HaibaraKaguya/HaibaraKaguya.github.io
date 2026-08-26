@@ -574,6 +574,12 @@ html.js [data-reveal].is-in { opacity: 1; transform: none; }
   border-top: 1px solid var(--line);
 }
 
+.notes-zone + .notes-zone { margin-top: 3.5rem; }
+.notes-zone-head { max-width: var(--maxw); margin: 0 auto 1.15rem; }
+.notes-zone-kicker { margin: 0 0 0.45rem; color: var(--acid); font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.16em; }
+.notes-zone-title { margin: 0; font-size: clamp(1.25rem, 2vw, 1.65rem); letter-spacing: -0.02em; }
+.notes-zone-lead { margin: 0.45rem 0 0; color: var(--muted); font-size: 0.88rem; }
+
 .note-card {
   position: relative;
   background: transparent;
