@@ -81,7 +81,7 @@ const NOTES = [
       },
       {
         "h": "五、NumPy 的高性能来源 · 1. Python 循环的解释器开销",
-        "p": "普通 Python 循环：\n\nfor i in range(n):；c[i] = a[i] + b[i]\n\n每一次循环，CPython都需要进行大量工作，例如：\n\n解释Bytecode；读取Python对象；检查对象类型；执行运算；创建结果对象；进入下一轮循环\n\n因此当循环次数达到百万级时，解释器开销会非常明显。"
+        "p": "普通 Python 循环：\n\nfor i in range(n): c[i] = a[i] + b[i]\n\n每一次循环，CPython都需要进行大量工作，例如：\n\n解释Bytecode；读取Python对象；检查对象类型；执行运算；创建结果对象；进入下一轮循环\n\n因此当循环次数达到百万级时，解释器开销会非常明显。"
       },
       {
         "h": "五、NumPy 的高性能来源 · 2. 向量化",
@@ -193,7 +193,7 @@ const NOTES = [
       },
       {
         "h": "五、NumPy 的高性能来源 · 1. Python 循环的解释器开销",
-        "p": "普通 Python 循环：\n\nfor i in range(n):；c[i] = a[i] + b[i]\n\n每一次循环，CPython都需要进行大量工作，例如：\n\n解释Bytecode；读取Python对象；检查对象类型；执行运算；创建结果对象；进入下一轮循环\n\n因此当循环次数达到百万级时，解释器开销会非常明显。"
+        "p": "普通 Python 循环：\n\nfor i in range(n): c[i] = a[i] + b[i]\n\n每一次循环，CPython都需要进行大量工作，例如：\n\n解释Bytecode；读取Python对象；检查对象类型；执行运算；创建结果对象；进入下一轮循环\n\n因此当循环次数达到百万级时，解释器开销会非常明显。"
       },
       {
         "h": "五、NumPy 的高性能来源 · 2. 向量化",
