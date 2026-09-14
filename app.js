@@ -2,6 +2,239 @@ document.documentElement.classList.add('js');
 
 const NOTES = [
   {
+  "id": "08",
+  "zone": "learning",
+  "order": 130,
+  "accent": "#3affd6",
+  "repo": "AI 工程笔记",
+  "url": "https://github.com/HaibaraKaguya/HaibaraKaguya.github.io",
+  "date": "09-14",
+  "zh": {
+    "cat": "学习 / 程序执行与计算机系统",
+    "status": "基础知识整理",
+    "title": "从 Python 的 print 到大型游戏运行：计算机程序执行机制的基础分析｜09-14",
+    "excerpt": "从 print(\"hello\") 串联 CPython、字节码、进程线程、SSD 与 RAM、DLL 与 ABI、Wheel、NumPy 向量化及游戏 CPU/GPU 分工，建立统一的程序执行模型。",
+    "sections": [
+      {
+        "h": "摘要",
+        "p": "当用户在终端中输入 python hello.py 并执行 print(\"hello\") 时，看似简单的输出行为实际上会经过解释器、操作系统、进程、内存、CPU、标准输出等多个层级。随着程序复杂度提升，这套机制又会进一步涉及动态链接库、ABI、Wheel、NumPy、向量化、SIMD、CPU Cache 以及 GPU 渲染等内容。本文从最基础的 Python 执行过程出发，逐步分析源码如何被 CPython 处理、进程如何被操作系统创建、CPU 如何执行机器指令、RAM 与 SSD 如何分工，并进一步延伸至大型游戏程序的运行方式以及 NumPy 高性能计算的底层原因。通过建立统一的程序执行模型，可以将原本分散的 Python、操作系统、二进制兼容和游戏运行知识连接为完整体系。\n\n关键词： Python；CPython；进程；内存；DLL；ABI；NumPy；SIMD；游戏引擎；CPU"
+      },
+      {
+        "h": "阅读范围与流程图说明",
+        "p": "本文以 Windows 上普通 CPython 的解释执行路径为基础模型，不展开可选 JIT。CPython 解释字节码与 CPU 执行解释器机器指令，是同一过程的不同观察层次；图中的箭头不表示字节码再次被编译成 CPython 的机器码。普通函数调用与请求操作系统服务不同，标准输出也可能被重定向或替换。NumPy 的性能取决于数据类型、数组布局、运算与硬件：切片可能不连续，object 数组仍涉及 Python 对象，向量化并不保证使用 SIMD。游戏帧流程为逻辑示意，CPU 与 GPU 的工作可以重叠；共享内存 GPU 不一定有独立显存。"
+      },
+      {
+        "h": "一、Python 程序从源码到执行 · 1. Python 与 CPython 的区别",
+        "p": "Python 本身是一门高级编程语言，它规定了变量、函数、循环、类等语法规则，但 Python 语言本身并不能直接让 CPU 执行。\n\n目前最常见的 Python 实现是 CPython。CPython 主要使用 C 语言编写，因此名称可以理解为“C 实现的 Python”。\n\n平时用户在 Windows 中运行：\n\npython hello.py\n\n实际上通常是在启动：\n\npython.exe\n\n而 python.exe 本质上就是 CPython 的可执行程序。\n\n因此，Python 与 CPython 的关系可以简单理解为：\n\nPython；= 一套语言规则；CPython；= 实现这些规则的具体程序"
+      },
+      {
+        "h": "一、Python 程序从源码到执行 · 2. Python Bytecode 的作用",
+        "p": "当 CPython 读取：\n\nprint(\"hello\")\n\n时，并不会直接把源码交给 CPU。\n\nCPython 首先会对源码进行解析，然后生成 Python Bytecode，即 Python 字节码。\n\n可以抽象为：\n\nPython源码 → CPython解析 → Python Bytecode\n\nPython Bytecode 是一种中间指令，例如它可能表达：\n\n加载对象；加载常量；调用函数；返回结果\n\n但这里必须注意：\n\nPython Bytecode 并不是 CPU 机器指令。\n\nCPU 不认识 Python Bytecode，Windows 也不会负责执行 Python Bytecode。\n\nPython Bytecode 只由 CPython 自己负责解释。"
+      },
+      {
+        "h": "一、Python 程序从源码到执行 · 3. CPU 实际执行的内容",
+        "p": "CPython 本身在发布之前已经通过编译器转换为了 CPU 可以执行的机器代码。\n\n因此真实关系是：\n\nPython源码 → Python Bytecode → CPython解释 Bytecode → CPython执行对应逻辑 → CPU执行CPython的机器指令\n\n因此可以把两种指令区分为：\n\nPython Bytecode；= 给 CPython 看的指令；机器指令；= 给 CPU 看的指令\n\n这也是理解 Python“解释执行”的关键。"
+      },
+      {
+        "h": "一、Python 程序从源码到执行 · 4. `print` 与操作系统之间的关系",
+        "p": "执行：\n\nprint(\"hello\")\n\n时，CPython 可以自己完成 Python 对象处理、函数调用等操作，但最终要把字符显示到终端，这就需要使用操作系统管理的资源。\n\n因此流程大致为：\n\nCPython解释到print → 执行CPython内部print逻辑 → 准备输出数据 → 写入stdout → 请求Windows完成输出 → 终端显示hello\n\n其中 stdout 是 Standard Output，即标准输出。\n\n因此三者可以概括为：\n\nCPython；负责理解Python；Windows；负责管理系统资源；CPU；负责执行机器指令"
+      },
+      {
+        "h": "二、进程、线程与操作系统 · 1. 程序与进程",
+        "p": "硬盘中的：\n\npython.exe\n\n只是一个静态程序文件。\n\n当它被运行后，Windows 会创建：\n\nProcess，即进程。\n\n因此：\n\n程序；= 硬盘上的静态文件；进程；= 程序运行后的活动实例\n\n一个 python.exe 可以同时产生多个 Python 进程，每个进程都有自己的：\n\nPID；内存空间；线程；打开的文件；运行状态\n\nPID 即 Process ID，是操作系统给进程分配的编号。"
+      },
+      {
+        "h": "二、进程、线程与操作系统 · 2. 线程的基本作用",
+        "p": "进程内部还可以包含一个或多个 Thread，即线程。\n\n可以简单理解为：\n\nProcess；= 资源容器；Thread；= 真正被CPU执行的任务流\n\n例如：\n\nPython Process；└── Main Thread\n\n复杂程序则可能具有：\n\nProcess；├── Thread 1；├── Thread 2；├── Thread 3；└── Thread 4\n\n操作系统主要通过调度这些线程来分配 CPU 时间。"
+      },
+      {
+        "h": "二、进程、线程与操作系统 · 3. 操作系统与 CPU 的关系",
+        "p": "CPU负责执行机器指令，但程序不能随意控制全部硬件资源。\n\nWindows Kernel，即 Windows 内核，负责：\n\n进程管理；线程调度；内存管理；文件系统；设备管理；权限控制；网络管理\n\n因此普通程序如果需要读取文件、访问网络或输出到终端，通常需要通过操作系统提供的接口完成。\n\n所以并不是：\n\n操作系统执行Python\n\n而是：\n\nCPU执行CPython；CPU也执行Windows内核代码；操作系统负责管理执行环境"
+      },
+      {
+        "h": "三、SSD、RAM 与程序运行 · 1. SSD 的作用",
+        "p": "SSD 主要负责长期保存数据，例如：\n\npython.exe；hello.py；游戏文件；图片；模型；视频；数据库\n\nSSD 在断电以后仍然能够保留数据，因此属于长期存储设备。"
+      },
+      {
+        "h": "三、SSD、RAM 与程序运行 · 2. RAM 的作用",
+        "p": "RAM，即 Random Access Memory，主要承担程序运行期间的临时存储。\n\n可以简单类比：\n\nSSD；= 仓库；RAM；= 工作台；CPU；= 工作人员\n\n当程序启动时，操作系统会将当前需要使用的程序代码和数据加载或映射到内存。\n\nCPU 随后围绕 RAM 中的数据进行大量计算。"
+      },
+      {
+        "h": "三、SSD、RAM 与程序运行 · 3. 程序数据的基本流动过程",
+        "p": "一个程序运行时，可以粗略理解为：\n\nSSD → 读取程序和资源 → RAM → CPU进行计算\n\n如果涉及显卡，还可能继续：\n\nRAM → 传输图形数据 → VRAM → GPU计算\n\n其中 VRAM 是显卡自己的显存。"
+      },
+      {
+        "h": "四、DLL、ABI 与 Wheel · 1. 动态链接库",
+        "p": "大型程序通常不会把所有代码都放进一个 EXE。\n\nWindows 中常见的动态链接库为：\n\n.dll\n\nDLL 全称：\n\nDynamic Link Library\n\n即动态链接库。\n\n例如：\n\ngame.exe；├── audio.dll；├── physics.dll；├── network.dll；└── graphics.dll\n\nDLL 本身已经被编译完成，其中包含 CPU 可以执行的机器代码。\n\n它通常不作为完整应用独立运行，而是供主程序调用。"
+      },
+      {
+        "h": "四、DLL、ABI 与 Wheel · 2. ABI 的作用",
+        "p": "ABI 全称：\n\nApplication Binary Interface\n\n即应用二进制接口。\n\nABI 规定不同二进制模块之间如何协作，例如：\n\n函数参数如何传递；返回值放在哪里；寄存器如何使用；栈如何组织；数据结构如何排列\n\n因此 ABI 并不是检测器。\n\n它是一套：\n\n二进制程序之间的接口规则。"
+      },
+      {
+        "h": "四、DLL、ABI 与 Wheel · 3. Python Wheel",
+        "p": "Wheel 是 Python 包的一种发行格式，后缀通常为：\n\n.whl\n\n例如：\n\nnumpy-xxx-cp313-cp313-win_amd64.whl\n\nWheel 中可能包含：\n\nPython代码；元数据；依赖信息；DLL；其他已编译二进制模块\n\npip 安装 Wheel 时，会检查当前 Python 环境、ABI 与系统平台是否兼容。"
+      },
+      {
+        "h": "四、DLL、ABI 与 Wheel · 4. 三者之间的关系",
+        "p": "三者可以这样理解：\n\nWheel；= Python安装包；DLL；= 安装包里可能存在的二进制功能模块；ABI；= DLL等二进制模块之间通信需要遵守的规则\n\n因此 Wheel 和 ABI 并不重复。\n\n可以类比为：\n\nWheel；= 快递箱；DLL；= 箱子里的机器零件；ABI；= 零件接口标准"
+      },
+      {
+        "h": "五、NumPy 的高性能来源 · 1. Python 循环的解释器开销",
+        "p": "普通 Python 循环：\n\nfor i in range(n):；c[i] = a[i] + b[i]\n\n每一次循环，CPython都需要进行大量工作，例如：\n\n解释Bytecode；读取Python对象；检查对象类型；执行运算；创建结果对象；进入下一轮循环\n\n因此当循环次数达到百万级时，解释器开销会非常明显。"
+      },
+      {
+        "h": "五、NumPy 的高性能来源 · 2. 向量化",
+        "p": "NumPy通常会写成：\n\nc = a + b\n\n这就是 Vectorization，即向量化的一种典型形式。\n\n向量化并不只是数学意义上的“使用向量”。\n\n它更重要的含义是：\n\n一次描述整批数据操作，将逐元素循环交给底层高性能代码执行。\n\n因此：\n\nPython逐元素处理 → 改为 → 底层批量处理\n\n这样可以显著减少 CPython 解释器参与次数。"
+      },
+      {
+        "h": "五、NumPy 的高性能来源 · 3. SIMD",
+        "p": "SIMD 全称：\n\nSingle Instruction Multiple Data\n\n即单指令多数据。\n\n传统方式可能是：\n\n处理第1个数；处理第2个数；处理第3个数；处理第4个数\n\nSIMD则可能实现：\n\n一条机器指令 → 同时处理多个数据\n\n因此向量化和 SIMD 关系非常紧密，但并不是同一个概念。\n\n可以理解为：\n\n向量化；= 编程层面的批量表达；SIMD；= CPU硬件层面的批量执行能力"
+      },
+      {
+        "h": "五、NumPy 的高性能来源 · 4. 连续内存与 CPU Cache",
+        "p": "Python list 中通常保存的是多个 Python对象的引用。\n\n其内存结构更接近：\n\nlist → 指针 指针 指针 指针 → 分别指向不同Python对象\n\n而 NumPy array 更接近：\n\n[1][2][3][4][5][6]\n\n数据类型统一，并且通常连续排列。\n\n这种连续内存对于 CPU 非常友好。\n\nCPU读取 RAM 时，往往会把附近的一整块数据一起载入 CPU Cache。\n\n因此：\n\n连续内存 → 更容易命中CPU Cache → 减少等待RAM → 提高计算效率\n\n这也是 NumPy 高性能的重要原因之一。"
+      },
+      {
+        "h": "六、大型游戏程序的运行机制 · 1. 游戏 EXE 的启动",
+        "p": "大型游戏启动时，通常会运行：\n\ngame.exe\n\nWindows为其创建游戏进程，并加载相关代码与资源。\n\n与 Python 不同，大型原生游戏的核心代码通常已经在开发阶段通过 C 或 C++ 编译成机器代码。\n\n因此运行时更接近：\n\ngame.exe → Windows创建进程 → CPU直接执行机器代码\n\n而不是：\n\n源码 → 解释器 → 运行"
+      },
+      {
+        "h": "六、大型游戏程序的运行机制 · 2. 游戏中的多线程",
+        "p": "大型游戏往往存在很多线程，例如：\n\nGame Thread；Render Thread；Physics Thread；Network Thread；Audio Thread；Asset Loading Thread；Worker Threads\n\n游戏引擎本身并不是一个线程。\n\n游戏引擎是一整套系统，其中不同模块可以分配到不同线程运行。"
+      },
+      {
+        "h": "六、大型游戏程序的运行机制 · 3. CPU 与 GPU 的分工",
+        "p": "CPU主要适合处理：\n\n游戏逻辑；AI；物理；碰撞；网络；资源管理；渲染准备\n\nGPU则擅长：\n\n顶点处理；材质计算；光照；阴影；像素处理；后处理\n\n因此一帧游戏可以极度简化为：\n\nCPU → 计算这一帧的世界状态 → 准备渲染数据 → 提交给GPU → GPU进行图形计算 → 生成画面 → 显示器显示\n\n随后继续下一帧。"
+      },
+      {
+        "h": "六、大型游戏程序的运行机制 · 4. 游戏资源与缓存",
+        "p": "游戏启动后还会读取：\n\n模型；纹理；地图；音频；Shader；配置；资源索引\n\n缓存的作用主要是：\n\n避免重复读取、重复计算或重复编译。\n\n因此缓存不是直接“喂给 CPU 的格式”。\n\n更准确的过程是：\n\nSSD中的资源或缓存 → 读取到RAM → CPU处理 → 必要的数据传入VRAM → GPU处理"
+      },
+      {
+        "h": "七、统一的计算机程序执行模型",
+        "p": "从 Python 到大型游戏，看似完全不同，但其实可以归入同一个计算机执行体系。\n\nPython：\n\n.py源码 → CPython → Bytecode → CPython机器代码 → CPU\n\n大型原生游戏：\n\nC/C++源码 → 开发阶段编译 → exe / dll → 机器代码 → CPU\n\nNumPy：\n\nPython → NumPy接口 → 底层C/C++/Fortran代码 → 机器代码 → CPU\n\n图形程序：\n\nCPU → 准备数据 → GPU → 并行渲染 → 画面\n\n因此无论语言和程序类型如何变化，最后都遵循一个核心规律：\n\n源码或资源 → 编译、解释或加载 → 进程与线程 → RAM → CPU执行机器指令 → 必要时调用操作系统、DLL或GPU → 产生结果"
+      },
+      {
+        "h": "八、结论",
+        "p": "从最简单的 print(\"hello\") 出发，可以逐步观察到现代计算机程序运行的完整基本结构。Python源码需要由 CPython理解并转换为 Bytecode，而真正被 CPU执行的仍然是 CPython自身已经编译完成的机器代码。程序启动后会形成进程，进程内部包含线程并获得独立的运行资源，操作系统负责调度线程、管理内存和协调硬件。\n\n随着程序复杂度提升，DLL、ABI 和 Wheel 又承担了代码模块化、二进制接口兼容以及 Python包分发等作用。NumPy则通过底层编译代码、向量化、连续内存和 SIMD减少 Python解释器带来的额外开销，从而实现高性能数值计算。大型游戏程序进一步将多线程、CPU逻辑处理、GPU渲染、资源管理与动态链接库结合起来，形成更加复杂但基本原理一致的软件运行体系。\n\n因此，CPython、进程、线程、RAM、SSD、DLL、ABI、Wheel、NumPy、SIMD和游戏引擎并不是彼此孤立的知识点，而是现代计算机从高级程序到硬件执行过程中的不同层级。理解这些层级之间的连接关系，比单独记忆概念更有助于理解程序运行、性能优化、跨平台兼容以及大型软件工程中的实际问题。"
+      }
+    ]
+  },
+  "en": {
+    "cat": "Learning / Program Execution and Computer Systems",
+    "status": "Foundational study note",
+    "title": "From Python print to large-scale games: foundations of program execution | 09-14",
+    "excerpt": "Full article in Chinese: CPython and bytecode, operating-system services, processes and threads, memory, DLL/ABI/Wheel, NumPy, and game rendering.",
+    "sections": [
+      {
+        "h": "摘要",
+        "p": "当用户在终端中输入 python hello.py 并执行 print(\"hello\") 时，看似简单的输出行为实际上会经过解释器、操作系统、进程、内存、CPU、标准输出等多个层级。随着程序复杂度提升，这套机制又会进一步涉及动态链接库、ABI、Wheel、NumPy、向量化、SIMD、CPU Cache 以及 GPU 渲染等内容。本文从最基础的 Python 执行过程出发，逐步分析源码如何被 CPython 处理、进程如何被操作系统创建、CPU 如何执行机器指令、RAM 与 SSD 如何分工，并进一步延伸至大型游戏程序的运行方式以及 NumPy 高性能计算的底层原因。通过建立统一的程序执行模型，可以将原本分散的 Python、操作系统、二进制兼容和游戏运行知识连接为完整体系。\n\n关键词： Python；CPython；进程；内存；DLL；ABI；NumPy；SIMD；游戏引擎；CPU"
+      },
+      {
+        "h": "阅读范围与流程图说明",
+        "p": "本文以 Windows 上普通 CPython 的解释执行路径为基础模型，不展开可选 JIT。CPython 解释字节码与 CPU 执行解释器机器指令，是同一过程的不同观察层次；图中的箭头不表示字节码再次被编译成 CPython 的机器码。普通函数调用与请求操作系统服务不同，标准输出也可能被重定向或替换。NumPy 的性能取决于数据类型、数组布局、运算与硬件：切片可能不连续，object 数组仍涉及 Python 对象，向量化并不保证使用 SIMD。游戏帧流程为逻辑示意，CPU 与 GPU 的工作可以重叠；共享内存 GPU 不一定有独立显存。"
+      },
+      {
+        "h": "一、Python 程序从源码到执行 · 1. Python 与 CPython 的区别",
+        "p": "Python 本身是一门高级编程语言，它规定了变量、函数、循环、类等语法规则，但 Python 语言本身并不能直接让 CPU 执行。\n\n目前最常见的 Python 实现是 CPython。CPython 主要使用 C 语言编写，因此名称可以理解为“C 实现的 Python”。\n\n平时用户在 Windows 中运行：\n\npython hello.py\n\n实际上通常是在启动：\n\npython.exe\n\n而 python.exe 本质上就是 CPython 的可执行程序。\n\n因此，Python 与 CPython 的关系可以简单理解为：\n\nPython；= 一套语言规则；CPython；= 实现这些规则的具体程序"
+      },
+      {
+        "h": "一、Python 程序从源码到执行 · 2. Python Bytecode 的作用",
+        "p": "当 CPython 读取：\n\nprint(\"hello\")\n\n时，并不会直接把源码交给 CPU。\n\nCPython 首先会对源码进行解析，然后生成 Python Bytecode，即 Python 字节码。\n\n可以抽象为：\n\nPython源码 → CPython解析 → Python Bytecode\n\nPython Bytecode 是一种中间指令，例如它可能表达：\n\n加载对象；加载常量；调用函数；返回结果\n\n但这里必须注意：\n\nPython Bytecode 并不是 CPU 机器指令。\n\nCPU 不认识 Python Bytecode，Windows 也不会负责执行 Python Bytecode。\n\nPython Bytecode 只由 CPython 自己负责解释。"
+      },
+      {
+        "h": "一、Python 程序从源码到执行 · 3. CPU 实际执行的内容",
+        "p": "CPython 本身在发布之前已经通过编译器转换为了 CPU 可以执行的机器代码。\n\n因此真实关系是：\n\nPython源码 → Python Bytecode → CPython解释 Bytecode → CPython执行对应逻辑 → CPU执行CPython的机器指令\n\n因此可以把两种指令区分为：\n\nPython Bytecode；= 给 CPython 看的指令；机器指令；= 给 CPU 看的指令\n\n这也是理解 Python“解释执行”的关键。"
+      },
+      {
+        "h": "一、Python 程序从源码到执行 · 4. `print` 与操作系统之间的关系",
+        "p": "执行：\n\nprint(\"hello\")\n\n时，CPython 可以自己完成 Python 对象处理、函数调用等操作，但最终要把字符显示到终端，这就需要使用操作系统管理的资源。\n\n因此流程大致为：\n\nCPython解释到print → 执行CPython内部print逻辑 → 准备输出数据 → 写入stdout → 请求Windows完成输出 → 终端显示hello\n\n其中 stdout 是 Standard Output，即标准输出。\n\n因此三者可以概括为：\n\nCPython；负责理解Python；Windows；负责管理系统资源；CPU；负责执行机器指令"
+      },
+      {
+        "h": "二、进程、线程与操作系统 · 1. 程序与进程",
+        "p": "硬盘中的：\n\npython.exe\n\n只是一个静态程序文件。\n\n当它被运行后，Windows 会创建：\n\nProcess，即进程。\n\n因此：\n\n程序；= 硬盘上的静态文件；进程；= 程序运行后的活动实例\n\n一个 python.exe 可以同时产生多个 Python 进程，每个进程都有自己的：\n\nPID；内存空间；线程；打开的文件；运行状态\n\nPID 即 Process ID，是操作系统给进程分配的编号。"
+      },
+      {
+        "h": "二、进程、线程与操作系统 · 2. 线程的基本作用",
+        "p": "进程内部还可以包含一个或多个 Thread，即线程。\n\n可以简单理解为：\n\nProcess；= 资源容器；Thread；= 真正被CPU执行的任务流\n\n例如：\n\nPython Process；└── Main Thread\n\n复杂程序则可能具有：\n\nProcess；├── Thread 1；├── Thread 2；├── Thread 3；└── Thread 4\n\n操作系统主要通过调度这些线程来分配 CPU 时间。"
+      },
+      {
+        "h": "二、进程、线程与操作系统 · 3. 操作系统与 CPU 的关系",
+        "p": "CPU负责执行机器指令，但程序不能随意控制全部硬件资源。\n\nWindows Kernel，即 Windows 内核，负责：\n\n进程管理；线程调度；内存管理；文件系统；设备管理；权限控制；网络管理\n\n因此普通程序如果需要读取文件、访问网络或输出到终端，通常需要通过操作系统提供的接口完成。\n\n所以并不是：\n\n操作系统执行Python\n\n而是：\n\nCPU执行CPython；CPU也执行Windows内核代码；操作系统负责管理执行环境"
+      },
+      {
+        "h": "三、SSD、RAM 与程序运行 · 1. SSD 的作用",
+        "p": "SSD 主要负责长期保存数据，例如：\n\npython.exe；hello.py；游戏文件；图片；模型；视频；数据库\n\nSSD 在断电以后仍然能够保留数据，因此属于长期存储设备。"
+      },
+      {
+        "h": "三、SSD、RAM 与程序运行 · 2. RAM 的作用",
+        "p": "RAM，即 Random Access Memory，主要承担程序运行期间的临时存储。\n\n可以简单类比：\n\nSSD；= 仓库；RAM；= 工作台；CPU；= 工作人员\n\n当程序启动时，操作系统会将当前需要使用的程序代码和数据加载或映射到内存。\n\nCPU 随后围绕 RAM 中的数据进行大量计算。"
+      },
+      {
+        "h": "三、SSD、RAM 与程序运行 · 3. 程序数据的基本流动过程",
+        "p": "一个程序运行时，可以粗略理解为：\n\nSSD → 读取程序和资源 → RAM → CPU进行计算\n\n如果涉及显卡，还可能继续：\n\nRAM → 传输图形数据 → VRAM → GPU计算\n\n其中 VRAM 是显卡自己的显存。"
+      },
+      {
+        "h": "四、DLL、ABI 与 Wheel · 1. 动态链接库",
+        "p": "大型程序通常不会把所有代码都放进一个 EXE。\n\nWindows 中常见的动态链接库为：\n\n.dll\n\nDLL 全称：\n\nDynamic Link Library\n\n即动态链接库。\n\n例如：\n\ngame.exe；├── audio.dll；├── physics.dll；├── network.dll；└── graphics.dll\n\nDLL 本身已经被编译完成，其中包含 CPU 可以执行的机器代码。\n\n它通常不作为完整应用独立运行，而是供主程序调用。"
+      },
+      {
+        "h": "四、DLL、ABI 与 Wheel · 2. ABI 的作用",
+        "p": "ABI 全称：\n\nApplication Binary Interface\n\n即应用二进制接口。\n\nABI 规定不同二进制模块之间如何协作，例如：\n\n函数参数如何传递；返回值放在哪里；寄存器如何使用；栈如何组织；数据结构如何排列\n\n因此 ABI 并不是检测器。\n\n它是一套：\n\n二进制程序之间的接口规则。"
+      },
+      {
+        "h": "四、DLL、ABI 与 Wheel · 3. Python Wheel",
+        "p": "Wheel 是 Python 包的一种发行格式，后缀通常为：\n\n.whl\n\n例如：\n\nnumpy-xxx-cp313-cp313-win_amd64.whl\n\nWheel 中可能包含：\n\nPython代码；元数据；依赖信息；DLL；其他已编译二进制模块\n\npip 安装 Wheel 时，会检查当前 Python 环境、ABI 与系统平台是否兼容。"
+      },
+      {
+        "h": "四、DLL、ABI 与 Wheel · 4. 三者之间的关系",
+        "p": "三者可以这样理解：\n\nWheel；= Python安装包；DLL；= 安装包里可能存在的二进制功能模块；ABI；= DLL等二进制模块之间通信需要遵守的规则\n\n因此 Wheel 和 ABI 并不重复。\n\n可以类比为：\n\nWheel；= 快递箱；DLL；= 箱子里的机器零件；ABI；= 零件接口标准"
+      },
+      {
+        "h": "五、NumPy 的高性能来源 · 1. Python 循环的解释器开销",
+        "p": "普通 Python 循环：\n\nfor i in range(n):；c[i] = a[i] + b[i]\n\n每一次循环，CPython都需要进行大量工作，例如：\n\n解释Bytecode；读取Python对象；检查对象类型；执行运算；创建结果对象；进入下一轮循环\n\n因此当循环次数达到百万级时，解释器开销会非常明显。"
+      },
+      {
+        "h": "五、NumPy 的高性能来源 · 2. 向量化",
+        "p": "NumPy通常会写成：\n\nc = a + b\n\n这就是 Vectorization，即向量化的一种典型形式。\n\n向量化并不只是数学意义上的“使用向量”。\n\n它更重要的含义是：\n\n一次描述整批数据操作，将逐元素循环交给底层高性能代码执行。\n\n因此：\n\nPython逐元素处理 → 改为 → 底层批量处理\n\n这样可以显著减少 CPython 解释器参与次数。"
+      },
+      {
+        "h": "五、NumPy 的高性能来源 · 3. SIMD",
+        "p": "SIMD 全称：\n\nSingle Instruction Multiple Data\n\n即单指令多数据。\n\n传统方式可能是：\n\n处理第1个数；处理第2个数；处理第3个数；处理第4个数\n\nSIMD则可能实现：\n\n一条机器指令 → 同时处理多个数据\n\n因此向量化和 SIMD 关系非常紧密，但并不是同一个概念。\n\n可以理解为：\n\n向量化；= 编程层面的批量表达；SIMD；= CPU硬件层面的批量执行能力"
+      },
+      {
+        "h": "五、NumPy 的高性能来源 · 4. 连续内存与 CPU Cache",
+        "p": "Python list 中通常保存的是多个 Python对象的引用。\n\n其内存结构更接近：\n\nlist → 指针 指针 指针 指针 → 分别指向不同Python对象\n\n而 NumPy array 更接近：\n\n[1][2][3][4][5][6]\n\n数据类型统一，并且通常连续排列。\n\n这种连续内存对于 CPU 非常友好。\n\nCPU读取 RAM 时，往往会把附近的一整块数据一起载入 CPU Cache。\n\n因此：\n\n连续内存 → 更容易命中CPU Cache → 减少等待RAM → 提高计算效率\n\n这也是 NumPy 高性能的重要原因之一。"
+      },
+      {
+        "h": "六、大型游戏程序的运行机制 · 1. 游戏 EXE 的启动",
+        "p": "大型游戏启动时，通常会运行：\n\ngame.exe\n\nWindows为其创建游戏进程，并加载相关代码与资源。\n\n与 Python 不同，大型原生游戏的核心代码通常已经在开发阶段通过 C 或 C++ 编译成机器代码。\n\n因此运行时更接近：\n\ngame.exe → Windows创建进程 → CPU直接执行机器代码\n\n而不是：\n\n源码 → 解释器 → 运行"
+      },
+      {
+        "h": "六、大型游戏程序的运行机制 · 2. 游戏中的多线程",
+        "p": "大型游戏往往存在很多线程，例如：\n\nGame Thread；Render Thread；Physics Thread；Network Thread；Audio Thread；Asset Loading Thread；Worker Threads\n\n游戏引擎本身并不是一个线程。\n\n游戏引擎是一整套系统，其中不同模块可以分配到不同线程运行。"
+      },
+      {
+        "h": "六、大型游戏程序的运行机制 · 3. CPU 与 GPU 的分工",
+        "p": "CPU主要适合处理：\n\n游戏逻辑；AI；物理；碰撞；网络；资源管理；渲染准备\n\nGPU则擅长：\n\n顶点处理；材质计算；光照；阴影；像素处理；后处理\n\n因此一帧游戏可以极度简化为：\n\nCPU → 计算这一帧的世界状态 → 准备渲染数据 → 提交给GPU → GPU进行图形计算 → 生成画面 → 显示器显示\n\n随后继续下一帧。"
+      },
+      {
+        "h": "六、大型游戏程序的运行机制 · 4. 游戏资源与缓存",
+        "p": "游戏启动后还会读取：\n\n模型；纹理；地图；音频；Shader；配置；资源索引\n\n缓存的作用主要是：\n\n避免重复读取、重复计算或重复编译。\n\n因此缓存不是直接“喂给 CPU 的格式”。\n\n更准确的过程是：\n\nSSD中的资源或缓存 → 读取到RAM → CPU处理 → 必要的数据传入VRAM → GPU处理"
+      },
+      {
+        "h": "七、统一的计算机程序执行模型",
+        "p": "从 Python 到大型游戏，看似完全不同，但其实可以归入同一个计算机执行体系。\n\nPython：\n\n.py源码 → CPython → Bytecode → CPython机器代码 → CPU\n\n大型原生游戏：\n\nC/C++源码 → 开发阶段编译 → exe / dll → 机器代码 → CPU\n\nNumPy：\n\nPython → NumPy接口 → 底层C/C++/Fortran代码 → 机器代码 → CPU\n\n图形程序：\n\nCPU → 准备数据 → GPU → 并行渲染 → 画面\n\n因此无论语言和程序类型如何变化，最后都遵循一个核心规律：\n\n源码或资源 → 编译、解释或加载 → 进程与线程 → RAM → CPU执行机器指令 → 必要时调用操作系统、DLL或GPU → 产生结果"
+      },
+      {
+        "h": "八、结论",
+        "p": "从最简单的 print(\"hello\") 出发，可以逐步观察到现代计算机程序运行的完整基本结构。Python源码需要由 CPython理解并转换为 Bytecode，而真正被 CPU执行的仍然是 CPython自身已经编译完成的机器代码。程序启动后会形成进程，进程内部包含线程并获得独立的运行资源，操作系统负责调度线程、管理内存和协调硬件。\n\n随着程序复杂度提升，DLL、ABI 和 Wheel 又承担了代码模块化、二进制接口兼容以及 Python包分发等作用。NumPy则通过底层编译代码、向量化、连续内存和 SIMD减少 Python解释器带来的额外开销，从而实现高性能数值计算。大型游戏程序进一步将多线程、CPU逻辑处理、GPU渲染、资源管理与动态链接库结合起来，形成更加复杂但基本原理一致的软件运行体系。\n\n因此，CPython、进程、线程、RAM、SSD、DLL、ABI、Wheel、NumPy、SIMD和游戏引擎并不是彼此孤立的知识点，而是现代计算机从高级程序到硬件执行过程中的不同层级。理解这些层级之间的连接关系，比单独记忆概念更有助于理解程序运行、性能优化、跨平台兼容以及大型软件工程中的实际问题。"
+      }
+    ]
+  }
+},
+  {
     id: '07', zone: 'learning', order: 120, accent: '#3affd6', repo: 'Shuchiin Academy 2.0',
     url: 'https://github.com/jaychou-66/shuchiin-academy', date: '08-26',
     zh: {
@@ -256,6 +489,17 @@ const SYSTEMS = [
 ];
 
 const TIMELINE = [
+  {
+  "year": "09.14",
+  "zh": {
+    "t": "新增学习笔记：从 Python print 到大型游戏运行",
+    "d": "完整整理解释器、操作系统、进程线程、内存、二进制接口、NumPy 与 GPU 渲染之间的联系。"
+  },
+  "en": {
+    "t": "New learning note: from Python print to large-scale games",
+    "d": "Connected interpreters, OS services, processes, memory, binary interfaces, NumPy, and GPU rendering."
+  }
+},
   { year: '08.26', zh: { t: '新增学习区：DOM 事件与事件委托', d: '整理键盘与输入事件、事件冒泡、target/currentTarget、closest、动态按钮委托和监听器生命周期。' }, en: { t: 'Learning section added: DOM events and delegation', d: 'Connected keyboard/input events, bubbling, target/currentTarget, closest, dynamic controls, and listener lifecycle.' } },
   { year: '08.26', zh: { t: '新增学习区：从 HTML 到 DOM 的浏览器交互模型', d: '整理 document、元素查找、事件监听、classList、文本安全与项目聊天界面的 DOM 更新链路。' }, en: { t: 'Learning section added: HTML-to-DOM interaction model', d: 'Connected document lookup, events, classList, text safety, and DOM updates in the chat interface.' } },
   { year: '08.26', zh: { t: '新增学习区：Promise、Response 与 FastAPI 通信模型', d: '将 fetch、HTTP 状态码、FastAPI 路由与文档分析请求整理为可迁移的前后端通信心智模型。' }, en: { t: 'Learning section added: Promise, Response, and FastAPI', d: 'Connected fetch, HTTP status codes, FastAPI routes, and document analysis into a reusable client-server model.' } },
