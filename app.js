@@ -3,14 +3,14 @@ document.documentElement.classList.add('js');
 const NOTES = [
 {
   "id": "10",
-  "zone": "learning",
+  "zone": "project",
   "order": 150,
   "accent": "#3affd6",
   "repo": "Shuchiin Academy",
   "url": "https://github.com/HaibaraKaguya/shuchiin-academy",
   "date": "2026-10-12",
   "zh": {
-    "cat": "学习 / 多 Agent 协作与软件验收",
+    "cat": "工程 / 多 Agent 协作与软件验收",
     "status": "真实失败已确认 · 解决方案待实施",
     "title": "并行接口契约与 Reviewer 验收门槛：计算器真实测试复盘｜2026-10-12｜秀知院",
     "excerpt": "一次 82 分批准仍未通过真实计算：从接口错配和异常放行追溯代码，结合 MetaGPT、CodeJudgeBench、C3 与 Anthropic 报告提出有边界的修正方案。",
@@ -123,12 +123,12 @@ const NOTES = [
       },
       {
         "h": "推进方案与版本记录",
-        "p": "保守：对相互依赖文件先串行生成，同时加入有限浏览器验收。\n稳步（推荐）：保留 LangGraph，加入共享契约、依赖调度、统一验收决策及有限 Reviewer 校准。\n激进：重做协作架构，再研究反馈归因和联合训练，需要可恢复环境与可靠奖励。\n\n执行优先级：先取消异常或预算耗尽后的错误批准，再加入真实行为门槛；随后落地接口契约与依赖调度，最后开展评分校准和反馈对照。\n\n源代码基线：355af52c60b428e146b161d7a1165aa1e6a505ea。真实计算器证据提交：b0d846eb08ef047969b406f8134fc3fc09c861c8。测试日期：2026-10-10；学习记录日期：2026-10-12。本次发布只整理证据与方案，未修改学院源代码，未重新运行模型实验。"
+        "p": "保守：对相互依赖文件先串行生成，同时加入有限浏览器验收。\n稳步（推荐）：保留 LangGraph，加入共享契约、依赖调度、统一验收决策及有限 Reviewer 校准。\n激进：重做协作架构，再研究反馈归因和联合训练，需要可恢复环境与可靠奖励。\n\n执行优先级：先取消异常或预算耗尽后的错误批准，再加入真实行为门槛；随后落地接口契约与依赖调度，最后开展评分校准和反馈对照。\n\n源代码基线：355af52c60b428e146b161d7a1165aa1e6a505ea。真实计算器证据提交：b0d846eb08ef047969b406f8134fc3fc09c861c8。测试日期：2026-10-10；工程记录日期：2026-10-12。本次发布只整理证据与方案，未修改学院源代码，未重新运行模型实验。"
       }
     ]
   },
   "en": {
-    "cat": "Learning / Multi-agent coordination and software acceptance",
+    "cat": "Engineering / Multi-agent coordination and software acceptance",
     "status": "Failure verified · Fixes proposed",
     "title": "Interface contracts and Reviewer acceptance gates: a real calculator test | 2026-10-12 | Shuchiin Academy",
     "excerpt": "An approved 82-point calculator failed real interaction. Pinned evidence and source inspection inform coordination contracts, objective acceptance gates and bounded judge calibration.",
@@ -918,11 +918,11 @@ const TIMELINE = [
 {
   "year": "2026.10.12",
   "zh": {
-    "t": "新增学习笔记：并行接口与 Reviewer 验收复盘",
+    "t": "新增工程复盘：并行接口与 Reviewer 验收",
     "d": "记录本地 Qwen 计算器一次 82 分放行却交互失败，整理真实证据、代码根因和论文启发；解决方案待实施。"
   },
   "en": {
-    "t": "Learning note: interface contracts and Reviewer acceptance",
+    "t": "Engineering review: interface contracts and Reviewer acceptance",
     "d": "Recorded a real Qwen calculator failure despite an 82-point approval, linking pinned evidence to proposed coordination and evaluation changes."
   }
 },
