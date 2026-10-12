@@ -1201,3 +1201,20 @@ html.js [data-reveal].is-in { opacity: 1; transform: none; }
 .m-source-links a { text-decoration: underline; text-underline-offset: 0.2em; overflow-wrap: anywhere; }
 .m-record-date { margin: 0; font-family: var(--font-mono); font-size: 0.8rem; }
 .m-foot { flex-wrap: wrap; gap: 1rem; }
+
+/* Give the three editorial areas room and keep their navigation independent. */
+.notes-zone + .notes-zone { margin-top: clamp(4.5rem, 8vw, 7rem); }
+.notes-zone--daily { padding: clamp(1rem, 2vw, 1.75rem); border: 1px solid var(--line); background: linear-gradient(145deg, rgba(58,255,214,.035), transparent 55%); }
+.notes-zone--daily .notes-zone-head { margin-bottom: 1.75rem; }
+.notes-zone--daily .note-card { padding: clamp(1.25rem, 2.6vw, 2.25rem); }
+.notes-zone--daily .note-title { font-size: clamp(1.2rem, 2.3vw, 1.8rem); }
+.notes-zone--daily .note-title-en, .notes-zone--daily .note-excerpt { display: block; }
+.notes-zone--daily .note-foot { justify-content: flex-start; }
+.notes-zone--daily .note-body { align-items: start; }
+.notes-index { max-width: var(--maxw); margin: clamp(4rem, 7vw, 6rem) auto 0; padding-top: 1.25rem; border-top: 1px solid var(--line); display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 1rem; }
+.notes-index a { padding: 1rem 1.1rem; border: 1px solid var(--line); color: var(--paper); font-family: var(--font-mono); font-size: .82rem; }
+.notes-index a:hover { border-color: var(--acid); }
+.notes-index a > span { color: var(--acid); margin-right: .55rem; }
+.notes-index small { color: var(--muted); margin-left: .45rem; }
+.notes-index + .section { margin-top: 2rem; }
+@media (max-width: 680px) { .notes-index { grid-template-columns: 1fr; } }

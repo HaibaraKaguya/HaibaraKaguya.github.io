@@ -95,7 +95,7 @@
           <h3 class="notes-zone-title" id="daily-notes-title" data-i18n="daily.title">每日推荐区</h3>
           <p class="notes-zone-lead" data-i18n="daily.lead">按日期归档，每天一篇合集：原始资料、详细解读与项目联系。</p>
         </div>
-        <div class="notes-grid" id="daily-notes-grid" aria-live="polite"></div>
+        <div class="notes-grid" id="daily-notes-grid" aria-live="polite"><article class="note-card" style="--accent:#3affd6"><div class="note-body"><div class="note-topline"><span class="note-idx">N09</span><span class="note-cat">2026-10-10 / 每日推荐</span></div><h3 class="note-title">任务边界与多 Agent 信用分配：Anthropic 报告与 C3 论文｜2026-10-10｜学院与知识库</h3><p class="note-title-en">Investigating unintended model actions · The Trace Is the State</p><p class="note-excerpt">Anthropic 官方研究报告与 C3 论文：奖励与权限边界、Reviewer 反馈归因，以及它们和学院、知识库项目的联系。</p><div class="note-foot"><span class="note-read">查看笔记 ↗</span></div></div><button class="note-open" type="button" data-note="09" aria-haspopup="dialog" aria-label="查看每日推荐：2026-10-10"></button></article></div>
         <nav class="notes-pagination" id="daily-pagination" aria-label="推荐日期归档 / Daily archive pages" hidden></nav>
       </div>
 
@@ -114,8 +114,9 @@
           <p class="notes-zone-lead">把学习中的核心概念连接到真实项目，形成可迁移的技术心智模型。</p>
         </div>
         <div class="notes-grid" id="learning-notes-grid" aria-live="polite"></div>
+        <nav class="notes-pagination" id="learning-pagination" aria-label="学习区分页 / Learning pages"></nav>
       </div>
-      <nav class="notes-pagination" id="notes-pagination" aria-label="笔记分页"></nav>
+      <nav class="notes-index" aria-label="笔记分区索引"><a href="#daily-recommendations"><span>01</span> 每日推荐 <small id="daily-count"></small> ↗</a><a href="#project-notes-title"><span>02</span> 项目工程区 <small id="project-count"></small> ↗</a><a href="#learning-notes-title"><span>03</span> 学习区 <small id="learning-count"></small> ↗</a></nav>
     </section>
 
     <!-- ============ SYSTEMS ============ -->
@@ -179,6 +180,6 @@
     </div>
   </div>
 
-  <script src="app.js"></script>
+  <script src="app.js?v=20261012"></script>
 </body>
 </html>

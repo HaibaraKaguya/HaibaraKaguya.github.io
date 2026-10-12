@@ -765,22 +765,22 @@ const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replac
 const t = (key) => I18N[key]?.[state.lang] || key;
 
 function renderNotes() {
-  const activeNotes = NOTES.filter((n) => n.zone === 'project' || n.zone === 'learning').sort((a, b) => (b.order || 0) - (a.order || 0));
-  const pageCount = Math.max(1, Math.ceil(activeNotes.length / NOTES_PER_PAGE));
-  state.notePage = Math.min(state.notePage, pageCount - 1);
-  const pageNotes = activeNotes.slice(state.notePage * NOTES_PER_PAGE, (state.notePage + 1) * NOTES_PER_PAGE);
   const renderCard = (n) => { const c = n[state.lang]; return '<article class="note-card" style="--accent:' + n.accent + '" data-reveal><button class="note-open" type="button" data-note="' + n.id + '" aria-haspopup="dialog" aria-label="' + esc(t('card.read') + ': ' + c.title) + '"></button><div class="note-body"><div class="note-topline"><span class="note-idx">N' + n.id + '</span><span class="note-cat">' + esc(c.cat) + '</span></div><h3 class="note-title">' + esc(c.title) + '</h3><p class="note-title-en">' + esc(n[state.lang === 'zh' ? 'en' : 'zh'].title) + '</p><p class="note-excerpt">' + esc(c.excerpt) + '</p><div class="note-foot"><span class="note-read">' + t('card.read') + ' ↗</span><span class="note-repo">↗ ' + esc(n.repo) + '</span></div></div></article>'; };
-  const dailyNotes = NOTES.filter((n) => n.zone === 'daily').sort((a, b) => b.date.localeCompare(a.date));
-  const dailyPages = Math.max(1, Math.ceil(dailyNotes.length / NOTES_PER_PAGE));
-  state.dailyPage = Math.min(state.dailyPage, dailyPages - 1);
-  $('#daily-notes-grid').innerHTML = dailyNotes.slice(state.dailyPage * NOTES_PER_PAGE, (state.dailyPage + 1) * NOTES_PER_PAGE).map(renderCard).join('') || '<p>' + esc(t('daily.empty')) + '</p>';
-  const dailyPager = $('#daily-pagination');
-  dailyPager.hidden = dailyPages <= 1;
-  dailyPager.innerHTML = Array.from({ length: dailyPages }, (_, i) => '<button class="notes-page' + (i === state.dailyPage ? ' is-current' : '') + '" type="button" data-daily-page="' + i + '" aria-label="' + esc((state.lang === 'zh' ? '推荐归档第 ' : 'Daily archive page ') + (i + 1)) + '"' + (i === state.dailyPage ? ' aria-current="page"' : '') + '>' + String(i + 1).padStart(2, '0') + '</button>').join('');
-  $('#project-notes-grid').innerHTML = pageNotes.filter((n) => n.zone === 'project').map(renderCard).join('');
-  $('#learning-notes-grid').innerHTML = pageNotes.filter((n) => n.zone === 'learning').map(renderCard).join('');
-  const pager = $('#notes-pagination');
-  if (pager) { pager.hidden = pageCount <= 1; pager.innerHTML = Array.from({ length: pageCount }, (_, i) => '<button class="notes-page' + (i === state.notePage ? ' is-current' : '') + '" type="button" data-note-page="' + i + '">' + String(i + 1).padStart(2, '0') + '</button>').join(''); }
+  const sorted = (zone) => NOTES.filter((n) => n.zone === zone).sort((a, b) => (b.order || 0) - (a.order || 0));
+  const dailyNotes = sorted('daily');
+  const projectNotes = sorted('project');
+  const learningNotes = sorted('learning');
+  const pageCount = Math.max(1, Math.ceil(learningNotes.length / NOTES_PER_PAGE));
+  state.notePage = Math.min(state.notePage, pageCount - 1);
+  $('#daily-notes-grid').innerHTML = dailyNotes.map(renderCard).join('') || '<p>' + esc(t('daily.empty')) + '</p>';
+  $('#project-notes-grid').innerHTML = projectNotes.map(renderCard).join('');
+  $('#learning-notes-grid').innerHTML = learningNotes.slice(state.notePage * NOTES_PER_PAGE, (state.notePage + 1) * NOTES_PER_PAGE).map(renderCard).join('');
+  const pager = $('#learning-pagination');
+  pager.hidden = pageCount <= 1;
+  pager.innerHTML = Array.from({ length: pageCount }, (_, i) => '<button class="notes-page' + (i === state.notePage ? ' is-current' : '') + '" type="button" data-note-page="' + i + '" aria-label="' + esc((state.lang === 'zh' ? '学习区第 ' : 'Learning page ') + (i + 1)) + '"' + (i === state.notePage ? ' aria-current="page"' : '') + '>' + String(i + 1).padStart(2, '0') + '</button>').join('');
+  $('#daily-count').textContent = dailyNotes.length + (state.lang === 'zh' ? ' 篇' : '');
+  $('#project-count').textContent = projectNotes.length + (state.lang === 'zh' ? ' 篇' : '');
+  $('#learning-count').textContent = learningNotes.length + (state.lang === 'zh' ? ' 篇' : '');
 }
 
 function renderSystems() { $('#systems-grid').innerHTML = SYSTEMS.map((s) => '<a class="sys-card" style="--accent:' + s.accent + '" href="' + s.url + '" target="_blank" rel="noopener noreferrer" data-reveal><span class="sys-name">' + esc(s.name) + '</span><span class="sys-desc">' + esc(s[state.lang].d) + '</span><span class="sys-tags">' + s.tags.map((x) => '<span class="sys-tag">' + esc(x) + '</span>').join('') + '</span></a>').join(''); }
@@ -794,7 +794,7 @@ function renderModalBody() {
 
 function openNote(id) { state.activeNote = id; state.lastFocused = document.activeElement; const b = $('#note-modal'); renderModalBody(); b.hidden = false; document.body.classList.add('lock'); requestAnimationFrame(() => requestAnimationFrame(() => b.classList.add('open'))); $('#note-close').focus(); }
 function closeNote() { if (!state.activeNote) return; state.activeNote = null; const b = $('#note-modal'); b.classList.remove('open'); const done = () => { b.hidden = true; document.body.classList.remove('lock'); }; b.addEventListener('transitionend', done, { once: true }); setTimeout(done, 340); state.lastFocused?.focus(); }
-function initModal() { const b = $('#note-modal'); const notesRoot = document.querySelector('.section--notes'); notesRoot.addEventListener('click', (e) => { const noteButton = e.target.closest('.note-open'); if (noteButton) openNote(noteButton.dataset.note); const dailyButton = e.target.closest('[data-daily-page]'); if (dailyButton) { state.dailyPage = Number(dailyButton.dataset.dailyPage); renderNotes(); initReveal(); } const pageButton = e.target.closest('[data-note-page]'); if (pageButton) { state.notePage = Number(pageButton.dataset.notePage); renderNotes(); initReveal(); } }); $('#note-close').addEventListener('click', closeNote); b.addEventListener('click', (e) => { if (e.target === b) closeNote(); }); document.addEventListener('keydown', (e) => { if (state.activeNote && e.key === 'Escape') closeNote(); }); }
+function initModal() { const b = $('#note-modal'); const notesRoot = document.querySelector('.section--notes'); notesRoot.addEventListener('click', (e) => { const noteButton = e.target.closest('.note-open'); if (noteButton) openNote(noteButton.dataset.note); const pageButton = e.target.closest('[data-note-page]'); if (pageButton) { state.notePage = Number(pageButton.dataset.notePage); renderNotes(); initReveal(); } }); $('#note-close').addEventListener('click', closeNote); b.addEventListener('click', (e) => { if (e.target === b) closeNote(); }); document.addEventListener('keydown', (e) => { if (state.activeNote && e.key === 'Escape') closeNote(); }); }
 
 function initReveal() { const nodes = $$('[data-reveal]'); if (reduceMotion.matches || !('IntersectionObserver' in window)) return nodes.forEach((n) => n.classList.add('is-in')); const observer = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-in'); observer.unobserve(e.target); } }), { threshold: 0.12 }); nodes.forEach((n) => observer.observe(n)); }
 function initParallax() { const scene = $('#hero-scene'); const planes = $$('.hero-plane'); if (!scene || reduceMotion.matches) return; let tx = 0, ty = 0, cx = 0, cy = 0; window.addEventListener('pointermove', (e) => { tx = e.clientX / innerWidth * 2 - 1; ty = e.clientY / innerHeight * 2 - 1; }, { passive: true }); (function frame() { cx += (tx - cx) * .05; cy += (ty - cy) * .05; scene.style.transform = 'rotateX(' + (-cy * 5).toFixed(2) + 'deg) rotateY(' + (cx * 6).toFixed(2) + 'deg)'; planes.forEach((p) => { const z = +p.dataset.zi || 0; p.style.transform = 'translate3d(' + (cx * (60 + z * .5)).toFixed(1) + 'px,' + (cy * (36 + z * .3)).toFixed(1) + 'px,0) translateZ(' + z + 'px)'; }); requestAnimationFrame(frame); })(); }
