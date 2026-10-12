@@ -2,6 +2,211 @@ document.documentElement.classList.add('js');
 
 const NOTES = [
 {
+  "id": "10",
+  "zone": "learning",
+  "order": 150,
+  "accent": "#3affd6",
+  "repo": "Shuchiin Academy",
+  "url": "https://github.com/HaibaraKaguya/shuchiin-academy",
+  "date": "2026-10-12",
+  "zh": {
+    "cat": "学习 / 多 Agent 协作与软件验收",
+    "status": "真实失败已确认 · 解决方案待实施",
+    "title": "并行接口契约与 Reviewer 验收门槛：计算器真实测试复盘｜2026-10-12｜秀知院",
+    "excerpt": "一次 82 分批准仍未通过真实计算：从接口错配和异常放行追溯代码，结合 MetaGPT、CodeJudgeBench、C3 与 Anthropic 报告提出有边界的修正方案。",
+    "sections": [
+      {
+        "h": "记录范围：真实测试已完成，解决方案尚未落地",
+        "p": "2026-10-10，使用秀知院项目和本地 Qwen 实际生成中文计算器，并打开原始产物做浏览器交互验收。2026-10-12，结合源代码与第一手研究材料整理两个核心问题：并行文件缺少可靠接口交接，以及 Reviewer 把失败产物高分放行。\n\n这是一条失败实验的学习记录。下文的代码审查与浏览器证据已经存在；共享契约、依赖调度、验收门槛及评分校准属于拟议措施，尚未修改或验证项目。不能把方案整理理解为修复完成。"
+      },
+      {
+        "h": "实测证据：一次 82 分评审，计算器却没有算出 42",
+        "p": "workflow.log 与 result.json 记录 Reviewer 给出 score=82、passed=true，最终 approved=true。它同时指出 CSS 缺失、按钮事件没有绑定，以及 HTML 输入框 ID 与 JavaScript 查询 ID 不一致。\n\n浏览器尝试设置输入失败，DOM 确认输入框 readOnly=true。随后依次点击 1、2、+、3、0、=，预期 12+30=42，实际显示值仍为空；控制台出现对 null 设置 value、对 null 读取 addEventListener 的错误。style.css 原始内容是生成超时的错误注释，不能称为有效样式。\n\n本次能确认只有一次 Reviewer 评分 82，没有证据支持同一次运行经历 59→82 的连续重试。减法、乘法、除法、除零、小数和清除用例受到基础交互失败阻塞，未计为独立执行的失败测试。readOnly 本身也并非所有计算器的错误：如果按钮输入完整，只读显示框可以合理；本例的问题是键盘输入要求和按钮操作路径都没有形成可用链路。"
+      },
+      {
+        "h": "可追溯的原始证据摘录",
+        "p": "原始浏览器记录如下；acceptance 为 FAIL，剩余用例标记为 blocked。该实验提交保留在本地，尚未推送到项目远端，因此本文内嵌记录，不提供无法访问的 GitHub 证据链接。\n\n{\n \"url\":\"http://localhost:8000/api/pages/output_20261010T181030.html\",\n \"method\":\"Codex browser interaction on unchanged project-generated preview\",\n \"inputAttempt\":\"Accessibility setValue refused: field has no settable value. DOM confirmed readOnly=true.\",\n \"buttonSequence\":[\"1\",\"2\",\"+\",\"3\",\"0\",\"=\"],\n \"expected\":\"42\",\n \"actual\":{\"displayValue\":\"\",\"readOnly\":true},\n \"consoleErrors\":[\n  \"TypeError: Cannot set properties of null (setting 'value') at output_20261010T181030.html:208:15\",\n  \"TypeError: Cannot read properties of null (reading 'addEventListener') at HTMLDocument.<anonymous> (output_20261010T181030.html:180:13)\"\n ],\n \"acceptance\":\"FAIL\",\n \"remainingCases\":\"Subtraction, multiplication, division, zero division, decimals and clear blocked by missing input references/event binding; not counted as independently executed tests.\"\n}\n\n评审结果摘要（result.json）：score=82；passed=true；最终 approved=true。原始 issues 包括：输入框 ID 为 display-input，但 JS 获取 input；大量按钮未绑定事件；style.css 仅有错误注释。\n\n生成产物摘要：HTML 使用 id=\"display-input\" 且 readonly；app.js 使用 document.getElementById(\"input\")；style.css 为 /* [ERROR: Request timed out.] */。完整本地证据目录：audits/2026-10-10/calculator-real-test/；对应提交 b0d846eb08ef047969b406f8134fc3fc09c861c8。"
+      },
+      {
+        "h": "问题一的代码根因：并行调用没有统一的接口输入",
+        "p": "developer.py:437–438 设置默认三个 worker；541–545 一次提交队列中的文件任务，待各任务完成后才写入 generated。首次生成时，多个 worker 可以同时开始，不能依赖“别人刚好先生成好”来获得接口。\n\n更具体的缺口位于 494 行：只有 generated 非空且 current_file 已在 generated 中时，才尝试注入关联文件。因此，新文件即使存在已完成的上游文件，也可能因自身尚不在 generated 中而错过关联上下文。511 行提供的是兄弟文件名列表和保持命名一致的要求，不是一份已经确认的类、函数或 DOM 接口定义。\n\n实际产物中，HTML 定义 display-input，JS 却查找 input，并查询 HTML 中不存在的 btn-calculate 等元素。代码存在同步缺口，产物存在接口错配；但本次没有做受控串行/并行对照，不能量化并行对失败率的因果贡献，也不能据一次失败认定所有并行都不可靠。",
+        "links": [
+          {
+            "label": "原始 Developer · 上下文注入和并行收集",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/355af52c60b428e146b161d7a1165aa1e6a505ea/src/agents/developer.py#L437"
+          }
+        ]
+      },
+      {
+        "h": "论文启发一：MetaGPT 的结构化产物与按需订阅",
+        "p": "MetaGPT: Meta Programming for A Multi-Agent Collaborative Framework（arXiv:2308.00352，阅读 v7）§3.2 描述结构化角色产物、共享消息池和订阅机制：架构师提供系统接口与交互设计，Agent 按角色关注相关消息，在前置依赖满足后行动。§3.3 又通过实际执行反馈迭代代码，而不仅依靠文字审查。\n\n由此得到的项目启发是：把共享内容组织成可消费的接口产物，让调度器判断依赖是否就绪。论文提供协作设计依据，并未替本项目保证接口正确或代码可用。",
+        "links": [
+          {
+            "label": "MetaGPT 论文 · v7 · §3.2 / §3.3",
+            "url": "https://arxiv.org/html/2308.00352v7"
+          }
+        ]
+      },
+      {
+        "h": "SOP 与 LangGraph：工作规则可以由现有图来执行",
+        "p": "SOP 规定工作职责、交接内容、启动条件和验收要求；LangGraph 的节点、边、状态和条件路由可以把这些规则实现出来。两者在表达谁先做、谁接结果时有重合，不应被描述为互斥方案。\n\n一条“架构节点→开发节点”的边可以传一句做个计算器，也可以传 Calculator.calculate(expression) 的签名、错误约定与契约版本。图连接正确，不代表输入内容足够。同样，开发→评审这条边若不附带运行证据，评审仍可能只凭印象判断。\n\n普通节点可用边连接，Send 用于动态派发等场景；它们都不会自动补齐接口定义。当前拟议路线保留现有 LangGraph，通过图状态和依赖调度落实 SOP，暂不整体迁移框架。",
+        "links": [
+          {
+            "label": "LangGraph 官方工作流说明",
+            "url": "https://docs.langchain.com/oss/python/langgraph/workflows-agents"
+          }
+        ]
+      },
+      {
+        "h": "问题一的措施：契约先行，按依赖分批执行",
+        "p": "① 生成代码前建立版本化接口契约：类名、方法参数与返回值、数据字段、API 路由、DOM ID、文件归属及关键交互。计算器应先约定输入方式、显示元素与计算按钮；类依赖则先约定提供者和使用者。\n\n② 每个任务声明 produces、requires、owner 和 contract_version。调度器仅启动依赖已就绪的任务；无依赖冲突的任务同批并行，有先后关系的任务沿依赖图执行。循环依赖必须先拆分或统一接口设计，不能靠等待解决。\n\n③ 接口已确定时，实现方和使用方可以按同一契约并行；若使用方必须读取具体实现，则等待上游产物完成。骨架只代表接口已声明，不代表功能已完成，状态必须区分 contract_ready 与 implementation_verified。\n\n④ 每个 Agent 只接收自身任务、相关共享契约及直接依赖的产物。接口变化时更新版本，并使受影响的下游验收结果失效，重新检查调用关系。集成后执行导入、签名、字段及 DOM 交互检查。以上是为本项目提出的工程设计。"
+      },
+      {
+        "h": "问题二的代码根因：分数、评审状态与真实成功混在一起",
+        "p": "reviewer.py:49 的规则要求宽松评分；345–354 在 JSON 解析或模型调用失败时回退到 score=80、passed=true。396–406 返回评审数据，同时固定 approved=true。\n\norchestrator.py:37–38 设置最大重试计数 3、门槛 59；531 行只在 score<59 且计数未达上限时进入退回分支。59 分本身不会触发退回；计数达到上限后的低分也落入 approved=true 分支。节点返回与路由均使用计数，实际重试轮数还需单独验证，不能从常量直接推断。\n\n前端 _verify_code 主要统计 HTML 标签和 JS/CSS 文件存在情况，不能证明浏览器运行成功。沙箱和验证信息作为 Reviewer 上下文传入，却没有形成编排器独立执行的失败否决条件。本次 82 分使流程进入批准分支，Reviewer 的问题清单没有阻止放行。\n\n“它因为其他部分做得好而给 82”是可能解释，但没有逐维评分或受控实验支持。不能据此认定模型故意偷懒。能确认的是严重问题与放行结论矛盾，而且程序未约束这种矛盾。",
+        "links": [
+          {
+            "label": "原始 Reviewer · 宽松规则、异常回退及返回值",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/355af52c60b428e146b161d7a1165aa1e6a505ea/src/agents/reviewer.py#L345"
+          },
+          {
+            "label": "原始 Orchestrator · 评分退回与批准分支",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/355af52c60b428e146b161d7a1165aa1e6a505ea/src/graph/orchestrator.py#L495"
+          },
+          {
+            "label": "原始前端验证器 · 结构检查",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/355af52c60b428e146b161d7a1165aa1e6a505ea/src/graph/orchestrator.py#L50"
+          }
+        ]
+      },
+      {
+        "h": "论文启发二：CodeJudgeBench 提醒先验证评审者",
+        "p": "CodeJudgeBench: Benchmarking LLM-as-a-Judge for Coding Tasks（arXiv:2507.10535，阅读 v2）评测了 26 个代码评审模型，涵盖代码生成、代码修复及测试生成。作者报告判断具有随机性，候选展示顺序和代码来源也会影响表现；在其比较场景中，成对比较优于单项标量评分。\n\n这支持把 Reviewer 看作需要校准的评估组件。成对比较可帮助选择两个修复候选，但不能证明候选已能运行。本项目的硬性验收门槛是结合实际失败提出的工程措施，并非该论文提供的现成实现。",
+        "links": [
+          {
+            "label": "CodeJudgeBench · v2 · 2025-08-14",
+            "url": "https://arxiv.org/abs/2507.10535v2"
+          }
+        ]
+      },
+      {
+        "h": "问题二的措施：先验收关键行为，再评价质量",
+        "p": "① 根据用户需求预先冻结必要验收项。计算器至少覆盖真实输入、点击计算得到 42、基本运算、错误处理及清除；浏览器应记录页面异常和结果。若设计采用按钮输入，必须测试该路径；若需求要求键盘输入，也必须单独验证。\n\n② 硬性门槛由程序读取测试证据：必要测试未运行、关键功能失败、生成产物包含超时错误、接口不一致或运行异常，都不能被其他维度的高分抵消。测试不足仍可能漏错，需要保留运行检查与静态评审。\n\n③ Reviewer 对验收项填写通过、失败或未验证，并提供证据位置。质量分用于门槛通过后的可用性、覆盖度及维护性分析；若存在阻断问题，状态保持失败。所有证据绑定同一份产物版本，避免测试 A、批准 B。\n\n④ 审查调用或解析失败标记 REVIEW_UNAVAILABLE；重试耗尽标记 RETRY_EXHAUSTED，并保留产物和失败原因。取消默认 80 分通过，统一 approved、passed、tests_passed 等字段含义。\n\n⑤ 使用单一决策函数供节点和路由调用：必要测试通过、评审有效、无阻断问题且满足质量要求才 APPROVED；可修复且预算尚余则 RETRY，否则 FAILED 或 NEEDS_REVIEW。停止执行和通过验收必须是两个状态。"
+      },
+      {
+        "h": "校准与反馈：验证能否拒绝坏产物，而非追求更高分",
+        "p": "用有限的固定案例检查 Reviewer：已知可用计算器、DOM ID 错配、未绑定按钮、CSS 生成超时，以及评审响应无法解析。记录关键错误误放行率、对正常产物的误拒率，以及少量重复评审的一致性。\n\nDeveloper 下一轮应收到复现步骤、失败断言、涉及文件和接口版本，不必收到上一轮总分。接口级问题应允许同时修复受影响文件，不能固定要求只补某一行。产物 JSON 本身不是这次 59 分传给 Developer 的证据；本次也没有可确认的 59→82 重试。\n\n拟议回归标准：原来的损坏计算器应被拒绝；已知正确产物应能通过；评审异常、必要测试未运行与重试耗尽不得批准。预算和时间上限提前固定，避免无边界测试。"
+      },
+      {
+        "h": "论文启发三：C3 用于后续反馈对照，不替代验收",
+        "p": "The Trace Is the State: Exact Credit Assignment for LLM Agent Teams（arXiv:2603.06859，阅读 v4）提出替换固定决策点的一条消息，再执行后续流程，比较终局结果。其归因依赖完整可恢复状态，并存在有限采样误差。\n\n对本项目的拟议实验是：固定坏计算器、模型、契约和运行环境，比较模糊意见与包含复现步骤及失败断言的意见，分别让 Developer 修复，用同一独立测试判定效果。当前尚未做这一对照；手写小规模 A/B 也不应直接称为完整 C3 复现。",
+        "links": [
+          {
+            "label": "The Trace Is the State · C3 · v4",
+            "url": "https://arxiv.org/html/2603.06859v4"
+          }
+        ]
+      },
+      {
+        "h": "官方报告启发：不要把表面成功变成奖励",
+        "p": "Anthropic 的 Investigating unintended model actions in our evaluations and internal use（2026-10-09）是一份官方研究报告，不是学术论文。它讨论含糊任务和不完善训练奖励可能促使模型追求非预期的完成方式，并强调训练以外的监控和约束。\n\n对本项目的启发：approved=true、工作流结束和产物生成，都不能直接当成任务成功或训练正奖励。必须关联实际行为证据。此联系是工程推论，本次记录没有证明 Qwen 存在奖励攻击或有意欺骗。",
+        "links": [
+          {
+            "label": "Anthropic 官方报告 · 2026-10-09（非论文）",
+            "url": "https://www.anthropic.com/research/investigating-unintended-model-actions"
+          }
+        ]
+      },
+      {
+        "h": "博弈论与迷宫的边界：类比不能替代接口实现",
+        "p": "囚徒困境和纳什均衡可用于思考局部激励为何未必带来团队最优结果，但代码 Agent 的合作不自动等价于这些博弈。接口错配首先是信息、依赖和验收问题，不必先建立完整博弈模型才能修正。\n\n此前提到的 GPT 迷宫尚未确认具体论文或项目，本文不把它列为已核对的研究来源，也不声称迷宫研究已经解决协同。本文可追溯的主要启发来自 MetaGPT、CodeJudgeBench、C3 及明确标注为报告的 Anthropic 材料。"
+      },
+      {
+        "h": "推进方案与版本记录",
+        "p": "保守：对相互依赖文件先串行生成，同时加入有限浏览器验收。\n稳步（推荐）：保留 LangGraph，加入共享契约、依赖调度、统一验收决策及有限 Reviewer 校准。\n激进：重做协作架构，再研究反馈归因和联合训练，需要可恢复环境与可靠奖励。\n\n执行优先级：先取消异常或预算耗尽后的错误批准，再加入真实行为门槛；随后落地接口契约与依赖调度，最后开展评分校准和反馈对照。\n\n源代码基线：355af52c60b428e146b161d7a1165aa1e6a505ea。真实计算器证据提交：b0d846eb08ef047969b406f8134fc3fc09c861c8。测试日期：2026-10-10；学习记录日期：2026-10-12。本次发布只整理证据与方案，未修改学院源代码，未重新运行模型实验。"
+      }
+    ]
+  },
+  "en": {
+    "cat": "Learning / Multi-agent coordination and software acceptance",
+    "status": "Failure verified · Fixes proposed",
+    "title": "Interface contracts and Reviewer acceptance gates: a real calculator test | 2026-10-12 | Shuchiin Academy",
+    "excerpt": "An approved 82-point calculator failed real interaction. Pinned evidence and source inspection inform coordination contracts, objective acceptance gates and bounded judge calibration.",
+    "sections": [
+      {
+        "h": "Evidence and implementation status",
+        "p": "A real local-Qwen calculator generation run on October 10 received one Reviewer score of 82 and approved=true despite reported DOM mismatches and missing button bindings. Browser clicks 1, 2, +, 3, 0, = should have displayed 42; the display remained empty and null-reference errors occurred. Other cases were blocked, not independently executed. There is no confirmed 59→82 retry sequence. The proposals below have not been implemented or validated. The audit commit is local and has not been pushed; the Chinese article embeds the original browser record rather than linking to unavailable remote evidence."
+      },
+      {
+        "h": "Parallel generation failure",
+        "p": "The original Developer submits multiple file-generation tasks concurrently. New files can miss related context because injection requires the current file already to exist in generated. Sibling filenames and a request for consistent naming do not establish a shared API. The observed HTML/JS identifiers conflict. This is a verified coordination gap, but no controlled parallel-versus-sequential causal experiment was run.",
+        "links": [
+          {
+            "label": "Pinned Developer source",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/355af52c60b428e146b161d7a1165aa1e6a505ea/src/agents/developer.py#L437"
+          }
+        ]
+      },
+      {
+        "h": "MetaGPT inspiration and the SOP/LangGraph relationship",
+        "p": "MetaGPT v7 describes structured artifacts, a shared message pool, role-based subscriptions and prerequisite dependencies in §3.2, and executable feedback in §3.3. These inspire explicit handoffs. SOP describes responsibilities, required inputs and acceptance rules; LangGraph can execute those rules using nodes, edges, state and routing. No framework migration is proposed.",
+        "links": [
+          {
+            "label": "MetaGPT 论文 · v7 · §3.2 / §3.3",
+            "url": "https://arxiv.org/html/2308.00352v7"
+          }
+        ]
+      },
+      {
+        "h": "Proposed coordination measures",
+        "p": "Create versioned contracts covering class and method signatures, fields, routes and DOM identifiers. Declare producers, consumers and dependencies. Parallelize tasks sharing stable contracts; wait when concrete upstream artifacts are required. Distinguish declared interfaces from verified implementations. Deliver only relevant contracts and direct dependencies. Interface updates invalidate affected downstream checks."
+      },
+      {
+        "h": "Approval defects and proposed gates",
+        "p": "The original reviewer defaults to score=80 and passed=true on parsing or invocation errors. The orchestrator retries only when score<59 and the count remains below its limit, otherwise entering an approved branch. Exact retry execution counts require separate validation. Structural frontend checks do not execute browser interactions. Replace this with one decision function shared by node and route: verified required tests, valid review, no blockers and adequate quality permit approval; otherwise retry within budget or stop with a failure/review-required status.",
+        "links": [
+          {
+            "label": "Pinned Reviewer source",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/355af52c60b428e146b161d7a1165aa1e6a505ea/src/agents/reviewer.py#L345"
+          },
+          {
+            "label": "Pinned orchestration source",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/355af52c60b428e146b161d7a1165aa1e6a505ea/src/graph/orchestrator.py#L495"
+          }
+        ]
+      },
+      {
+        "h": "CodeJudgeBench inspiration",
+        "p": "CodeJudgeBench v2 reports randomness and presentation sensitivity in code judging. It motivates finite calibration with known good and defective artifacts. Pairwise comparison may rank repair candidates, but does not prove runtime correctness. The hard acceptance gate is a project-specific engineering proposal.",
+        "links": [
+          {
+            "label": "CodeJudgeBench · v2 · 2025-08-14",
+            "url": "https://arxiv.org/abs/2507.10535v2"
+          }
+        ]
+      },
+      {
+        "h": "C3 and Anthropic: proposed follow-up research",
+        "p": "C3 v4 motivates comparing feedback from a fixed recoverable failure state, followed by independent tests; this experiment has not been run. The Anthropic October 9 report, which is not an academic paper, informs separation of apparent completion from valid success and rewards. Neither establishes intentional cheating in this calculator run.",
+        "links": [
+          {
+            "label": "The Trace Is the State · C3 · v4",
+            "url": "https://arxiv.org/html/2603.06859v4"
+          },
+          {
+            "label": "Anthropic 官方报告 · 2026-10-09（非论文）",
+            "url": "https://www.anthropic.com/research/investigating-unintended-model-actions"
+          }
+        ]
+      },
+      {
+        "h": "Plan and reproducibility",
+        "p": "Conservative: serialize dependent files and add bounded browser checks. Recommended: retain LangGraph, introduce contracts and dependency scheduling, implement objective gates, then calibrate the Reviewer. Aggressive: redesign orchestration and study training/credit assignment. Prioritize false-approval prevention. Source baseline: 355af52c60b428e146b161d7a1165aa1e6a505ea; evidence: b0d846eb08ef047969b406f8134fc3fc09c861c8. Recorded October 12, 2026. No Academy code was changed or model experiments rerun for this publication. The previously mentioned GPT maze source remains unidentified."
+      }
+    ]
+  }
+},
+{
   "id": "09",
   "zone": "daily",
   "order": 140,
@@ -710,6 +915,17 @@ const SYSTEMS = [
 ];
 
 const TIMELINE = [
+{
+  "year": "2026.10.12",
+  "zh": {
+    "t": "新增学习笔记：并行接口与 Reviewer 验收复盘",
+    "d": "记录本地 Qwen 计算器一次 82 分放行却交互失败，整理真实证据、代码根因和论文启发；解决方案待实施。"
+  },
+  "en": {
+    "t": "Learning note: interface contracts and Reviewer acceptance",
+    "d": "Recorded a real Qwen calculator failure despite an 82-point approval, linking pinned evidence to proposed coordination and evaluation changes."
+  }
+},
 {
   "year": "2026.10.10",
   "zh": {
