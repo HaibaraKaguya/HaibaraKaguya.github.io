@@ -1193,3 +1193,11 @@ html.js [data-reveal].is-in { opacity: 1; transform: none; }
     transform: none !important;
   }
 }
+
+/* Dated primary-source collections reuse the existing editorial list. */
+#daily-recommendations { scroll-margin-top: 6rem; }
+.m-sec-body p + p { margin-top: 1em; }
+.m-source-links { margin-top: 1rem; }
+.m-source-links a { text-decoration: underline; text-underline-offset: 0.2em; overflow-wrap: anywhere; }
+.m-record-date { margin: 0; font-family: var(--font-mono); font-size: 0.8rem; }
+.m-foot { flex-wrap: wrap; gap: 1rem; }

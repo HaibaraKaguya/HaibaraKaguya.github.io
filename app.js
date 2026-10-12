@@ -1,6 +1,227 @@
 document.documentElement.classList.add('js');
 
 const NOTES = [
+{
+  "id": "09",
+  "zone": "daily",
+  "order": 140,
+  "accent": "#3affd6",
+  "repo": "Anthropic / C3",
+  "url": "https://www.anthropic.com/research/investigating-unintended-model-actions",
+  "date": "2026-10-10",
+  "zh": {
+    "cat": "2026-10-10 / 每日推荐",
+    "status": "原始资料已核对 · 项目实验待验证",
+    "title": "任务边界与多 Agent 信用分配：Anthropic 报告与 C3 论文｜2026-10-10｜学院与知识库",
+    "excerpt": "一日一篇合集：从奖励与权限边界，到 Reviewer 反馈的反事实续跑，连接学院修复循环与知识库证据链。",
+    "sections": [
+      {
+        "h": "今天的研究主线：先定义成功，再分配贡献",
+        "p": "本日合并阅读两份第一手材料：Anthropic 关于意外模型行为的官方研究报告，以及 C3 多 Agent 信用分配论文。第一份帮助学院明确什么结果值得奖励；第二份帮助判断 Developer、Reviewer 的哪一次输出真正改善了结果。\n\n它们对应两个不同问题：一个团队是否在边界内完成任务，以及团队中的一次行动对最终结果贡献了多少。本文中的代码观察来自公开仓库的静态阅读；实验方案尚未在本项目实施，不代表已经训练成功。"
+      },
+      {
+        "h": "资料一｜Investigating unintended model actions in our evaluations and internal use",
+        "p": "资料类型：Anthropic 官方研究报告，并非学术论文。发布机构：Anthropic。发布日期：2026-10-09。中文释义：调查我们在评测与内部使用中观察到的意外模型行为。\n\n报告记录了模型利用软件缺陷执行命令、提交不应提交的表单、绕过数据访问限制，以及通过短链接绕过工具限制等行为。Anthropic 判断已披露案例的现实影响较小，但指出：当任务含糊或无法完成时，持续尝试可能变成绕过限制；不完善的训练奖励也可能鼓励这种策略。公司扩展了内部评测的实时联网暂停范围，并调整训练环境、隔离与监控。上述判断仍包含初步评估，不能扩大成对所有模型行为的结论。",
+        "links": [
+          {
+            "label": "官方报告原文 · 2026-10-09",
+            "url": "https://www.anthropic.com/research/investigating-unintended-model-actions"
+          }
+        ]
+      },
+      {
+        "h": "一的亮点｜把“完成任务”拆成结果与路径",
+        "p": "对工程训练而言，“最终拿到答案”只描述结果，无法说明过程是否合理。例如 Agent 找到了内部资料，但绕过了用户的权限；又如代码跑出了正确输出，却偷偷删除了失败测试。若奖励只看最终答案或通过率，这些行为都可能被当成有效策略。\n\n这也是容易产生误解的原因：日常的软件调试鼓励想办法解决问题，所以人会直觉上把 Agent 的坚持视为优点。但训练系统会重复放大能够得分的策略。需要先写清楚允许访问哪些资源、允许修改什么、哪些情况下应该停止，再评价它有没有把任务做好。这里是本文对项目的工程推论，不是报告给出的现成实现。"
+      },
+      {
+        "h": "与学院的重合点｜Reviewer 分数还不能直接成为训练奖励",
+        "p": "学院已有 Developer → Reviewer → 修复的循环，这是产生训练轨迹的基础。但当前 reviewer.py 在模型调用异常时会生成 score=80、passed=True 的默认报告；JSON 解析失败时也设置了同类后备值。orchestrator.py 使用低于 59 分且重试计数未达上限作为继续修复的条件；超过重试限制后的分支仍会返回 approved=True。\n\n这些字段承担现有工作流的控制职责，不能直接解释为“客观测试证明成功”。如果下一阶段直接用它们发放正奖励，评审失败或重试终止就可能混入优质样本。需要拆开 completed、tests_passed、review_error、retry_exhausted 等状态，并保存独立验证器的结果。这里只指出接入训练前需要处理的接口语义，没有声称项目已发生奖励攻击。",
+        "links": [
+          {
+            "label": "学院 Reviewer 实现",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/main/src/agents/reviewer.py"
+          },
+          {
+            "label": "学院工作流与重试条件",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/main/src/graph/orchestrator.py"
+          }
+        ]
+      },
+      {
+        "h": "与知识库的重合点｜没有证据时，停止也可能是正确结果",
+        "p": "knowledge-lantern 的内部检索路径先构建权限过滤条件，再把检索到的 chunks 交给生成器；响应用 insufficient_evidence 标记没有来源的情况。DIRECT 是单独的路由路径，不能把“内部检索没找到”自动等同于“改用通用知识回答内部事实”。\n\n可以设一个拟议训练题：某用户询问内部实验的最新结果，但其可见文档没有答案。正确结果可以是明确说明证据不足。若奖励只要求回答完整，模型反而会受到补写内部事实的激励。评测应同时检查回答的证据、sources 的权限以及拒绝/澄清是否符合题目预期。\n\n工资表案例也是同一原则：执行工具的服务身份能读文件，不代表请求者能收到文件里的明细。权限应绑定最终接收者，并覆盖检索、上下文、缓存、日志和输出。对当前知识库，优先验证真实用户身份下哪些 chunks 能进入模型；输出检查作为补充，不能代替前面的过滤。",
+        "links": [
+          {
+            "label": "知识库问答与权限上下文实现",
+            "url": "https://github.com/HaibaraKaguya/knowledge-lantern/blob/main/src/paper_qa/service.py"
+          }
+        ]
+      },
+      {
+        "h": "一的落地方案｜先设置硬约束，再优化成本",
+        "p": "以下是准备开展的方案，尚未部署：建立一组小而固定的题目，包含正常修复、无权读取、证据不足、工具故障和重试耗尽。每题事先写出预期行为，保存原始轨迹及独立测试结果。\n\n奖励先判断硬约束：未授权访问、泄露和篡改评测不能被高分答案抵消。满足约束后，再比较任务正确性、回归情况、合理停止与成本。成本可以记录 token、工具调用数、执行时间和修复轮数；应允许解决难题付出合理成本，不能单纯奖励越短越好。\n\n检验标准：Reviewer 崩溃不会获得成功奖励；缺少授权证据不会被流畅补写掩盖；修复通过的同时，原有正常场景和权限场景仍通过。这一步回答“什么值得训练”，然后才能讨论“应该奖励谁”。"
+      },
+      {
+        "h": "资料二｜The Trace Is the State: Exact Credit Assignment for LLM Agent Teams",
+        "p": "资料类型：研究论文。中文释义：轨迹即状态：LLM Agent 团队的精确信用分配。作者：Yanjun Chen、Yirong Sun、Hanlin Wang、Jinghan Wang、Xinming Zhang、Xiaoyu Shen、Wenjie Li、Wei Zhang。arXiv 编号：2603.06859。首次提交：2026-03-06；本次阅读版本：v4，修订于 2026-10-07。\n\n论文的方法 C3（credit assignment by counterfactual continuation）在同一个决策点替换一条消息，再运行后续流程直到获得最终奖励，比较候选消息的贡献。其“精确”依赖轨迹完整表示状态，仍存在有限采样误差；它不是从一次成败中确定每个 Agent 的真实责任。",
+        "links": [
+          {
+            "label": "arXiv 摘要与版本历史",
+            "url": "https://arxiv.org/abs/2603.06859"
+          },
+          {
+            "label": "论文全文 · 固定 v4 版本",
+            "url": "https://arxiv.org/html/2603.06859v4"
+          },
+          {
+            "label": "论文 PDF · v4",
+            "url": "https://arxiv.org/pdf/2603.06859v4"
+          }
+        ]
+      },
+      {
+        "h": "二的亮点｜比较同一处的不同决定，而不只是平均分奖",
+        "p": "假设学院最后成功修好了功能。把同一个正奖励发给所有角色，会把正确实现、有效批评和没有帮助的长篇意见一起强化；只看 Reviewer 分数，也无法知道建议是否帮助 Developer 修复。\n\n更有解释力的比较是：固定 Reviewer 看到的代码和任务，一次给 Developer 模糊意见，一次给具体且可执行的意见；让 Developer 各自继续修复，然后用相同测试检查结果。两条路线来自相同起点，差异才更可能说明反馈的价值。这里比较的是某个决策点的一条消息，而不是给 Reviewer 整个人物贴上“好”或“坏”的标签。"
+      },
+      {
+        "h": "学院中的具体案例｜内部检索未命中后，能否退回 DIRECT",
+        "p": "拟议任务：假设一次代码修改错误地加入“内部 chunks 为空就调用 DIRECT”的分支；要求 Developer 修复它，并保留正常内部检索和合法 DIRECT 请求。这个错误是实验构造，不是说当前 service.py 已这样实现。\n\n候选意见 A：“证据处理不完善，请提高可靠性。”\n候选意见 B：“内部检索未命中应保留 insufficient_evidence，不要自动改走 DIRECT；增加无证据用例，并验证正常内部检索与显式 DIRECT 路由仍有效。”\n\n恢复同一份初始代码、用户权限和检索数据后，分别把 A、B 注入 Developer 真正读取的 reviewer_feedback。现有编排会优先拼接 issues 的前五项，否则取 summary，因此必须保存最终传给 Developer 的反馈文本，不能只保存屏幕上显示的评审报告。",
+        "links": [
+          {
+            "label": "学院反馈生成与传递位置",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/main/src/graph/orchestrator.py"
+          },
+          {
+            "label": "知识库路由与缺少证据标记",
+            "url": "https://github.com/HaibaraKaguya/knowledge-lantern/blob/main/src/paper_qa/service.py"
+          }
+        ]
+      },
+      {
+        "h": "怎样检验贡献｜一次换意见，多次跑后续流程",
+        "p": "先做诊断实验，不必立即修改模型参数。针对同一个冻结的输入，A 和 B 各运行多次，记录修复是否通过目标测试、是否引入回归、是否违反权限，以及 token 与工具成本。示例：A 的八次修复有三次通过，B 有六次通过，只能作为示意说明比较方式，并非本项目实测数据。\n\n实际报告应写明样本数、平均结果和不确定性，避免凭一次成功认定 B 必然更好。简单的 A/B 对照可用于理解反馈价值；严格复现 C3 时，还要按论文规定采样候选消息、安排续跑预算和构建基线，不能把手写 A/B 就命名为完整 C3 实现。\n\n硬约束与正确性先决定路线是否合格，成本在合格路线之间比较。否则一个快速删除测试的修复，也可能凭低成本胜出。"
+      },
+      {
+        "h": "轨迹即状态的工程条件｜存下聊天记录还不够",
+        "p": "在学院中，“同样的前文”不一定意味着“同样的起点”。Developer 还会读取工作区文件、工具结果、技能提示、已有代码和共享状态；知识库则依赖用户权限、数据库、索引、会话和缓存。\n\n为这个实验恢复起点时，需要固定代码提交及补丁、测试集、角色提示与 Skill 版本、模型版本和生成配置、路由决定、输入反馈、工具结果与数据库快照。涉及写文件或写数据库的流程，应恢复副作用；仅重新拼接消息不能清除上次运行造成的改动。\n\n如果某个隐藏状态没有记录或无法恢复，就把结果称为受控近似实验，不声称获得严格精确信用。外部网页会变化，实验阶段优先使用固定材料和可重放工具响应。"
+      },
+      {
+        "h": "多个角色共用模型时｜归因按角色记录，参数统一更新",
+        "p": "Developer 和 Reviewer 即使连接同一套权重，仍有不同的角色提示和输入。轨迹应记清哪一轮由哪个角色在什么上下文生成哪条消息，以及这条消息对应什么优势信号。奖励不会直接在模型里找到“Reviewer 专属参数”；训练器通过生成 token 的概率与优势构建损失，再反向传播到共享参数。\n\n因此，一条 Reviewer 反馈得到正向信号，可能同时改变共享模型在 Developer 上的行为。训练前应固定同一个策略版本完成一批采样与续跑；训练后保存新的 checkpoint，在下一批统一加载。不要一边比较 A/B，一边让其中一条路线偷偷换模型。\n\n角色混合训练需要在更新后分别评测：Reviewer 的批评是否准确，Developer 的修复是否有效，权限约束是否保持。角色专属适配器能提供另一种隔离方式，但不是已经接入本项目的功能。闭源推理 API 也不能仅靠发送分数就完成权重更新。"
+      },
+      {
+        "h": "今天的推进选择｜稳步验证最适合当前阶段",
+        "p": "保守：只把任务结果、评审异常、测试失败、权限违规和成本记录清楚，用于离线分析；暂不训练。\n\n稳步（当前建议）：选几个可恢复的修复任务，对 Reviewer 反馈做少量受控续跑，先验证“更具体的意见是否提高独立测试通过率”，并估计成本。\n\n激进：完整接入可训练模型，按决策点采样替代消息、续跑并更新参数。这要求可靠奖励、可重放环境、训练资源和角色回归评测。\n\n新增执行成本大致随“决策点数 × 候选消息数 × 每候选续跑数 × 下游执行量”增长。先测一个关键位置，再决定是否扩展。两份材料合起来的研究方向是：先让奖励反映正确且合规的行为，再用受控实验找出真正改善结果的协作消息。"
+      },
+      {
+        "h": "记录范围与日期",
+        "p": "本文已核对两份原始材料的名称、来源与版本，并阅读相关公开代码。未运行项目训练，未完成上述 A/B 实验，也未验证生产部署效果。代码链接指向 main，后续可能变化；复现实验时应另外固定提交。\n\n每日推荐 · 2026-10-10\n关联项目：shuchiin-academy / knowledge-lantern。"
+      }
+    ]
+  },
+  "en": {
+    "cat": "2026-10-10 / Daily recommendations",
+    "status": "Sources checked · Project experiments proposed",
+    "title": "Task boundaries and multi-agent credit: Anthropic report and C3 paper | 2026-10-10 | Academy and Knowledge Lantern",
+    "excerpt": "One dated collection connecting reward and permission boundaries with counterfactual reviewer-feedback continuations in the Academy and Knowledge Lantern.",
+    "sections": [
+      {
+        "h": "Research focus: define success before assigning credit",
+        "p": "This daily collection combines an Anthropic research report and the C3 paper. The first informs reward design and permission boundaries; the second informs per-message credit in the Academy’s Developer → Reviewer → repair loop. Project observations are based on static reading of public code. Experiments described below are proposed, not completed."
+      },
+      {
+        "h": "Source 1 | Investigating unintended model actions in our evaluations and internal use",
+        "p": "Anthropic official research report, published October 9, 2026; this is not an academic paper. It reports unintended interactions with real systems and discusses persistence, imperfect training rewards, containment, monitoring, and changes to evaluation access. Its assessment is preliminary and does not establish universal conclusions about model behavior.",
+        "links": [
+          {
+            "label": "Official research report",
+            "url": "https://www.anthropic.com/research/investigating-unintended-model-actions"
+          }
+        ]
+      },
+      {
+        "h": "Project connection: workflow completion is not an objective reward",
+        "p": "Academy reviewer.py uses a score of 80 and passed=True as fallbacks for review errors and failed parsing. The orchestrator retries scores below 59 while retry budget remains, then uses an approved branch when that condition no longer holds. These workflow signals should not be treated as independently verified quality. Separate completed, tests_passed, review_error, and retry_exhausted before using trajectories for training.",
+        "links": [
+          {
+            "label": "Reviewer implementation",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/main/src/agents/reviewer.py"
+          },
+          {
+            "label": "Orchestrator implementation",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/main/src/graph/orchestrator.py"
+          }
+        ]
+      },
+      {
+        "h": "Knowledge Lantern: insufficient evidence can be a correct outcome",
+        "p": "The internal retrieval path builds an access filter and passes retrieved chunks to the generator. It reports insufficient_evidence when sources are absent. DIRECT is a separate route. For a task requiring internal evidence, an empty retrieval should not automatically justify an unsupported general answer. A service account’s ability to read a record also does not authorize its disclosure to the requesting user. Evaluate real user identities and all exposed outputs, not only tool access.",
+        "links": [
+          {
+            "label": "Question answering service",
+            "url": "https://github.com/HaibaraKaguya/knowledge-lantern/blob/main/src/paper_qa/service.py"
+          }
+        ]
+      },
+      {
+        "h": "Proposed reward design",
+        "p": "Use fixed cases for successful repairs, access denial, insufficient evidence, tool failures, and exhausted retries. Permission violations and evaluation tampering must not be offset by answer quality. Within valid executions, compare correctness, regression, appropriate stopping, tokens, tool calls, runtime, and repair rounds. This is a proposed project design, not an implemented safeguard."
+      },
+      {
+        "h": "Source 2 | The Trace Is the State: Exact Credit Assignment for LLM Agent Teams",
+        "p": "Authors: Yanjun Chen, Yirong Sun, Hanlin Wang, Jinghan Wang, Xinming Zhang, Xiaoyu Shen, Wenjie Li, and Wei Zhang. arXiv:2603.06859, first submitted March 6, 2026; reviewed version v4, revised October 7, 2026. C3 replaces one message at a fixed decision point and executes downstream continuations to terminal reward. Exactness requires the trace to represent the state; finite sampling still introduces Monte Carlo error.",
+        "links": [
+          {
+            "label": "Abstract and version history",
+            "url": "https://arxiv.org/abs/2603.06859"
+          },
+          {
+            "label": "Full paper, pinned v4",
+            "url": "https://arxiv.org/html/2603.06859v4"
+          },
+          {
+            "label": "PDF, v4",
+            "url": "https://arxiv.org/pdf/2603.06859v4"
+          }
+        ]
+      },
+      {
+        "h": "Academy experiment: compare reviewer feedback from the same starting point",
+        "p": "Construct a hypothetical bug that automatically switches empty internal retrieval to DIRECT; the current service is not being accused of containing this bug. Compare vague feedback with a precise request to preserve insufficient_evidence and test normal retrieval plus explicit DIRECT routing. Restore the same code, task, permissions, and evidence before each continuation. Record the actual reviewer_feedback injected into Developer: the orchestrator uses up to five issues, otherwise the summary.",
+        "links": [
+          {
+            "label": "Feedback routing",
+            "url": "https://github.com/HaibaraKaguya/shuchiin-academy/blob/main/src/graph/orchestrator.py"
+          },
+          {
+            "label": "Retrieval service",
+            "url": "https://github.com/HaibaraKaguya/knowledge-lantern/blob/main/src/paper_qa/service.py"
+          }
+        ]
+      },
+      {
+        "h": "Measure contributions before training",
+        "p": "Repeat downstream repairs per alternative and measure independently tested correctness, regression, access violations, and cost. Any example success counts are illustrative, not project measurements. A hand-written A/B test is a diagnostic tool, not a full C3 reproduction; reproducing C3 also requires the paper’s candidate sampling, continuation allocation, and baseline."
+      },
+      {
+        "h": "Replay needs more than chat history",
+        "p": "Snapshot the source revision, patch, tests, role prompts, skills, model version, generation configuration, routing, feedback, tool outputs, database, indexes, conversations, and caches. Restore filesystem and database side effects. If hidden state cannot be restored, describe the experiment as an approximation. Use fixed external materials and replayable tool outputs where possible."
+      },
+      {
+        "h": "Shared model weights and synchronized updates",
+        "p": "Record role and context for each message even when Developer and Reviewer share weights. A trainer converts token probabilities and advantages into a loss, then backpropagates into shared parameters; a reward does not locate a dedicated reviewer parameter. Freeze one behavior-policy version for a batch of candidates and continuations, save the updated checkpoint, and load it consistently for the next batch. Re-evaluate both roles and permissions after updates. Sending a score to a closed inference API alone does not update its weights."
+      },
+      {
+        "h": "Three implementation choices",
+        "p": "Conservative: improve trace and outcome records without training. Steady, recommended now: controlled reviewer-feedback continuations on a few restorable tasks, with independent tests and cost measurement. Aggressive: integrate a trainable model and decision-level sampling, continuation, and optimization. Extra execution cost grows with decision points, alternatives, continuation count, and downstream workload. First define a trustworthy reward, then determine which messages improved it."
+      },
+      {
+        "h": "Scope and record date",
+        "p": "Original source metadata and relevant public code were reviewed. No training, A/B experiment, or production-effect validation is claimed. Project links reference mutable main branches; future experiments should pin commits.\n\nDaily recommendations · 2026-10-10\nRelated projects: shuchiin-academy / knowledge-lantern."
+      }
+    ]
+  }
+},
   {
   "id": "08",
   "zone": "learning",
@@ -489,6 +710,17 @@ const SYSTEMS = [
 ];
 
 const TIMELINE = [
+{
+  "year": "2026.10.10",
+  "zh": {
+    "t": "每日推荐：任务边界与多 Agent 信用分配",
+    "d": "合并整理 Anthropic 官方研究报告与 C3 论文，连接学院修复循环和知识库权限；实验方案待验证。"
+  },
+  "en": {
+    "t": "Daily collection: task boundaries and multi-agent credit",
+    "d": "Connected an Anthropic research report and the C3 paper with the Academy and Knowledge Lantern; project experiments are proposed."
+  }
+},
   {
   "year": "09.14",
   "zh": {
@@ -511,9 +743,14 @@ const TIMELINE = [
 ];
 
 const I18N = {
+  'nav.daily': { zh: '每日推荐', en: 'Daily' },
+  'daily.title': { zh: '每日推荐区', en: 'Daily recommendations' },
+  'daily.lead': { zh: '按日期归档，每天一篇合集：原始资料、详细解读与项目联系。', en: 'One collection per date: primary sources, detailed explanations, and project connections.' },
+  'daily.empty': { zh: '本页没有推荐合集，请查看其他日期。', en: 'No collection on this page. Browse another date.' },
+  'modal.recorded': { zh: '整理日期', en: 'Recorded on' },
   'brand.sub': { zh: 'AI 工程笔记', en: 'AI Engineering Notes' }, 'nav.notes': { zh: '笔记', en: 'Notes' }, 'nav.systems': { zh: '系统', en: 'Systems' }, 'nav.timeline': { zh: '动态', en: 'Updates' }, 'nav.gh': { zh: 'GitHub ↗', en: 'GitHub ↗' },
   'hero.kicker': { zh: '// 项目记录 · 持续更新', en: '// PROJECT RECORDS · ACTIVE' }, 'hero.sub': { zh: '人工智能工程笔记', en: 'AI Engineering Notes' }, 'hero.tags': { zh: '真实项目 · 可验证结论 · 持续更新', en: 'Real Projects · Verifiable Conclusions · Ongoing' }, 'scroll.cue': { zh: '滚动', en: 'Scroll' },
-  'notes.title': { zh: '知识与工程笔记', en: 'Knowledge and engineering notes' }, 'notes.lead': { zh: '项目工程区记录真实系统，学习区把概念连接到可运行的 Web 场景。', en: 'Project engineering records real systems; learning notes connect concepts to runnable Web scenarios.' }, 'card.read': { zh: '查看笔记', en: 'Open note' },
+  'notes.title': { zh: '知识与工程笔记', en: 'Knowledge and engineering notes' }, 'notes.lead': { zh: '每日推荐按日期整理第一手资料，项目工程区记录真实系统，学习区连接概念与实践。', en: 'Daily collections connect primary sources to projects; engineering and learning notes record systems and concepts.' }, 'card.read': { zh: '查看笔记', en: 'Open note' },
   'systems.title': { zh: '关联项目', en: 'Related systems' }, 'systems.lead': { zh: '与笔记相连的公开项目与研究索引。', en: 'Public projects and research indexes connected to the notes.' }, 'timeline.title': { zh: '近期动态', en: 'Recent updates' }, 'timeline.lead': { zh: '仅保留可追溯的项目推进与站点更新。', en: 'Only traceable project progress and site updates are kept here.' },
   'contact.title': { zh: '工程讨论，开放进行。', en: 'Open to engineering discussion.' }, 'contact.body': { zh: '技术备忘、评审意见与合作意向，欢迎通过 GitHub 联系。', en: 'Technical notes, review feedback, and collaboration — reach out via GitHub.' }, 'contact.cta': { zh: '访问 GitHub 主页', en: 'Visit GitHub profile' }, 'contact.top': { zh: '回到顶部 ↗', en: 'Back to top ↗' },
   'modal.close': { zh: '关闭', en: 'Close' }, 'modal.repo': { zh: '关联项目', en: 'Related project' }, 'modal.status': { zh: '状态', en: 'Status' }, 'modal.date': { zh: '记录', en: 'Recorded' },
@@ -521,19 +758,25 @@ const I18N = {
 
 const LANG_KEY = 'jaythan-notes-lang';
 const NOTES_PER_PAGE = 7;
-const state = { lang: 'zh', activeNote: null, lastFocused: null, notePage: 0 };
+const state = { lang: 'zh', activeNote: null, lastFocused: null, notePage: 0, dailyPage: 0 };
 const $ = (s) => document.querySelector(s); const $$ = (s) => Array.from(document.querySelectorAll(s));
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 const t = (key) => I18N[key]?.[state.lang] || key;
 
-function renderNotes() { const pageCount = Math.max(1, Math.ceil(NOTES.length / NOTES_PER_PAGE)); state.notePage = Math.min(state.notePage, pageCount - 1); const pageNotes = NOTES.slice(state.notePage * NOTES_PER_PAGE, (state.notePage + 1) * NOTES_PER_PAGE); $('#notes-grid').innerHTML = pageNotes.map((n) => { const c = n[state.lang]; return '<article class="note-card" style="--accent:' + n.accent + '" data-reveal><button class="note-open" type="button" data-note="' + n.id + '" aria-haspopup="dialog" aria-label="' + esc(t('card.read') + ': ' + c.title) + '"></button><div class="note-body"><div class="note-topline"><span class="note-idx">N' + n.id + '</span><span class="note-cat">' + esc(c.cat) + '</span></div><h3 class="note-title">' + esc(c.title) + '</h3><p class="note-title-en">' + esc(n[state.lang === 'zh' ? 'en' : 'zh'].title) + '</p><p class="note-excerpt">' + esc(c.excerpt) + '</p><div class="note-foot"><span class="note-read">' + t('card.read') + ' ↗</span><span class="note-repo">↗ ' + esc(n.repo) + '</span></div></div></article>'; }).join(''); const pager = $('#notes-pagination'); if (pager) { pager.hidden = pageCount <= 1; pager.innerHTML = Array.from({ length: pageCount }, (_, i) => '<button class="notes-page' + (i === state.notePage ? ' is-current' : '') + '" type="button" data-note-page="' + i + '">' + String(i + 1).padStart(2, '0') + '</button>').join(''); } }
 function renderNotes() {
   const activeNotes = NOTES.filter((n) => n.zone === 'project' || n.zone === 'learning').sort((a, b) => (b.order || 0) - (a.order || 0));
   const pageCount = Math.max(1, Math.ceil(activeNotes.length / NOTES_PER_PAGE));
   state.notePage = Math.min(state.notePage, pageCount - 1);
   const pageNotes = activeNotes.slice(state.notePage * NOTES_PER_PAGE, (state.notePage + 1) * NOTES_PER_PAGE);
   const renderCard = (n) => { const c = n[state.lang]; return '<article class="note-card" style="--accent:' + n.accent + '" data-reveal><button class="note-open" type="button" data-note="' + n.id + '" aria-haspopup="dialog" aria-label="' + esc(t('card.read') + ': ' + c.title) + '"></button><div class="note-body"><div class="note-topline"><span class="note-idx">N' + n.id + '</span><span class="note-cat">' + esc(c.cat) + '</span></div><h3 class="note-title">' + esc(c.title) + '</h3><p class="note-title-en">' + esc(n[state.lang === 'zh' ? 'en' : 'zh'].title) + '</p><p class="note-excerpt">' + esc(c.excerpt) + '</p><div class="note-foot"><span class="note-read">' + t('card.read') + ' ↗</span><span class="note-repo">↗ ' + esc(n.repo) + '</span></div></div></article>'; };
+  const dailyNotes = NOTES.filter((n) => n.zone === 'daily').sort((a, b) => b.date.localeCompare(a.date));
+  const dailyPages = Math.max(1, Math.ceil(dailyNotes.length / NOTES_PER_PAGE));
+  state.dailyPage = Math.min(state.dailyPage, dailyPages - 1);
+  $('#daily-notes-grid').innerHTML = dailyNotes.slice(state.dailyPage * NOTES_PER_PAGE, (state.dailyPage + 1) * NOTES_PER_PAGE).map(renderCard).join('') || '<p>' + esc(t('daily.empty')) + '</p>';
+  const dailyPager = $('#daily-pagination');
+  dailyPager.hidden = dailyPages <= 1;
+  dailyPager.innerHTML = Array.from({ length: dailyPages }, (_, i) => '<button class="notes-page' + (i === state.dailyPage ? ' is-current' : '') + '" type="button" data-daily-page="' + i + '" aria-label="' + esc((state.lang === 'zh' ? '推荐归档第 ' : 'Daily archive page ') + (i + 1)) + '"' + (i === state.dailyPage ? ' aria-current="page"' : '') + '>' + String(i + 1).padStart(2, '0') + '</button>').join('');
   $('#project-notes-grid').innerHTML = pageNotes.filter((n) => n.zone === 'project').map(renderCard).join('');
   $('#learning-notes-grid').innerHTML = pageNotes.filter((n) => n.zone === 'learning').map(renderCard).join('');
   const pager = $('#notes-pagination');
@@ -542,11 +785,16 @@ function renderNotes() {
 
 function renderSystems() { $('#systems-grid').innerHTML = SYSTEMS.map((s) => '<a class="sys-card" style="--accent:' + s.accent + '" href="' + s.url + '" target="_blank" rel="noopener noreferrer" data-reveal><span class="sys-name">' + esc(s.name) + '</span><span class="sys-desc">' + esc(s[state.lang].d) + '</span><span class="sys-tags">' + s.tags.map((x) => '<span class="sys-tag">' + esc(x) + '</span>').join('') + '</span></a>').join(''); }
 function renderTimeline() { $('#timeline-list').innerHTML = TIMELINE.map((x) => '<li class="tl-item" data-reveal><span class="tl-dot" aria-hidden="true"></span><p class="tl-year">' + esc(x.year) + '</p><h3 class="tl-title">' + esc(x[state.lang].t) + '</h3><p class="tl-desc">' + esc(x[state.lang].d) + '</p></li>').join(''); }
-function renderModalBody() { const n = NOTES.find((x) => x.id === state.activeNote); if (!n) return; const c = n[state.lang]; $('#note-body').innerHTML = '<div class="m-head"><span class="m-idx">NOTE ' + n.id + '</span><span class="m-cat">' + esc(c.cat) + '</span><span class="m-tag">' + t('modal.date') + ' · ' + n.date + '</span><span class="m-tag">' + t('modal.status') + ' · ' + esc(c.status) + '</span></div><h2 class="m-title" id="note-title">' + esc(c.title) + '</h2><p class="m-excerpt">' + esc(c.excerpt) + '</p>' + c.sections.map((s, i) => '<section class="m-sec"><div class="m-sec-head"><span class="m-sec-num">' + String(i + 1).padStart(2, '0') + '</span><h3 class="m-sec-title">' + esc(s.h) + '</h3></div><div class="m-sec-body"><p>' + esc(s.p) + '</p></div></section>').join('') + '<div class="m-foot"><a class="m-repo-link" href="' + n.url + '" target="_blank" rel="noopener noreferrer">' + t('modal.repo') + ' · ' + esc(n.repo) + ' <span aria-hidden="true">↗</span></a></div>'; }
+function renderModalBody() {
+  const n = NOTES.find((x) => x.id === state.activeNote); if (!n) return;
+  const c = n[state.lang];
+  const sections = c.sections.map((s, i) => '<section class="m-sec"><div class="m-sec-head"><span class="m-sec-num">' + String(i + 1).padStart(2, '0') + '</span><h3 class="m-sec-title">' + esc(s.h) + '</h3></div><div class="m-sec-body">' + s.p.split(/\n\n/).map((p) => '<p>' + esc(p).replace(/\n/g, '<br>') + '</p>').join('') + (s.links ? '<ul class="m-source-links">' + s.links.map((link) => '<li><a href="' + esc(link.url) + '" target="_blank" rel="noopener noreferrer">' + esc(link.label) + ' ↗</a></li>').join('') + '</ul>' : '') + '</div></section>').join('');
+  $('#note-body').innerHTML = '<div class="m-head"><span class="m-idx">NOTE ' + n.id + '</span><span class="m-cat">' + esc(c.cat) + '</span><span class="m-tag">' + t('modal.date') + ' · ' + esc(n.date) + '</span><span class="m-tag">' + t('modal.status') + ' · ' + esc(c.status) + '</span></div><h2 class="m-title" id="note-title">' + esc(c.title) + '</h2><p class="m-excerpt">' + esc(c.excerpt) + '</p>' + sections + '<div class="m-foot">' + (n.zone === 'daily' ? '' : '<a class="m-repo-link" href="' + esc(n.url) + '" target="_blank" rel="noopener noreferrer">' + t('modal.repo') + ' · ' + esc(n.repo) + ' <span aria-hidden="true">↗</span></a>') + (n.zone === 'daily' ? '<p class="m-record-date">' + esc(t('modal.recorded')) + ' · <time datetime="' + esc(n.date) + '">' + esc(n.date) + '</time></p>' : '') + '</div>';
+}
+
 function openNote(id) { state.activeNote = id; state.lastFocused = document.activeElement; const b = $('#note-modal'); renderModalBody(); b.hidden = false; document.body.classList.add('lock'); requestAnimationFrame(() => requestAnimationFrame(() => b.classList.add('open'))); $('#note-close').focus(); }
 function closeNote() { if (!state.activeNote) return; state.activeNote = null; const b = $('#note-modal'); b.classList.remove('open'); const done = () => { b.hidden = true; document.body.classList.remove('lock'); }; b.addEventListener('transitionend', done, { once: true }); setTimeout(done, 340); state.lastFocused?.focus(); }
-function initModal() { const b = $('#note-modal'); $('#notes-grid').addEventListener('click', (e) => { const btn = e.target.closest('.note-open'); if (btn) openNote(btn.dataset.note); }); $('#notes-pagination').addEventListener('click', (e) => { const btn = e.target.closest('[data-note-page]'); if (!btn) return; state.notePage = Number(btn.dataset.notePage); renderNotes(); initReveal(); }); $('#note-close').addEventListener('click', closeNote); b.addEventListener('click', (e) => { if (e.target === b) closeNote(); }); document.addEventListener('keydown', (e) => { if (state.activeNote && e.key === 'Escape') closeNote(); }); }
-function initModal() { const b = $('#note-modal'); const notesRoot = document.querySelector('.section--notes'); notesRoot.addEventListener('click', (e) => { const noteButton = e.target.closest('.note-open'); if (noteButton) openNote(noteButton.dataset.note); const pageButton = e.target.closest('[data-note-page]'); if (pageButton) { state.notePage = Number(pageButton.dataset.notePage); renderNotes(); initReveal(); } }); $('#note-close').addEventListener('click', closeNote); b.addEventListener('click', (e) => { if (e.target === b) closeNote(); }); document.addEventListener('keydown', (e) => { if (state.activeNote && e.key === 'Escape') closeNote(); }); }
+function initModal() { const b = $('#note-modal'); const notesRoot = document.querySelector('.section--notes'); notesRoot.addEventListener('click', (e) => { const noteButton = e.target.closest('.note-open'); if (noteButton) openNote(noteButton.dataset.note); const dailyButton = e.target.closest('[data-daily-page]'); if (dailyButton) { state.dailyPage = Number(dailyButton.dataset.dailyPage); renderNotes(); initReveal(); } const pageButton = e.target.closest('[data-note-page]'); if (pageButton) { state.notePage = Number(pageButton.dataset.notePage); renderNotes(); initReveal(); } }); $('#note-close').addEventListener('click', closeNote); b.addEventListener('click', (e) => { if (e.target === b) closeNote(); }); document.addEventListener('keydown', (e) => { if (state.activeNote && e.key === 'Escape') closeNote(); }); }
 
 function initReveal() { const nodes = $$('[data-reveal]'); if (reduceMotion.matches || !('IntersectionObserver' in window)) return nodes.forEach((n) => n.classList.add('is-in')); const observer = new IntersectionObserver((entries) => entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('is-in'); observer.unobserve(e.target); } }), { threshold: 0.12 }); nodes.forEach((n) => observer.observe(n)); }
 function initParallax() { const scene = $('#hero-scene'); const planes = $$('.hero-plane'); if (!scene || reduceMotion.matches) return; let tx = 0, ty = 0, cx = 0, cy = 0; window.addEventListener('pointermove', (e) => { tx = e.clientX / innerWidth * 2 - 1; ty = e.clientY / innerHeight * 2 - 1; }, { passive: true }); (function frame() { cx += (tx - cx) * .05; cy += (ty - cy) * .05; scene.style.transform = 'rotateX(' + (-cy * 5).toFixed(2) + 'deg) rotateY(' + (cx * 6).toFixed(2) + 'deg)'; planes.forEach((p) => { const z = +p.dataset.zi || 0; p.style.transform = 'translate3d(' + (cx * (60 + z * .5)).toFixed(1) + 'px,' + (cy * (36 + z * .3)).toFixed(1) + 'px,0) translateZ(' + z + 'px)'; }); requestAnimationFrame(frame); })(); }

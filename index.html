@@ -20,6 +20,7 @@
         <span class="brand-sub" data-i18n="brand.sub">AI 工程笔记</span>
       </a>
       <nav class="site-nav" aria-label="页面导航">
+        <a href="#daily-recommendations" data-i18n="nav.daily">每日推荐</a>
         <a href="#notes" data-i18n="nav.notes">笔记</a>
         <a href="#systems" data-i18n="nav.systems">系统</a>
         <a href="#timeline" data-i18n="nav.timeline">时间线</a>
@@ -87,6 +88,16 @@
         <h2 class="section-title" id="notes-title" data-i18n="notes.title">正在解决的问题</h2>
         <p class="section-lead" data-i18n="notes.lead">一条笔记只处理一个具体工程问题：发生了什么、如何判断、当前结论是什么。</p>
       </header>
+
+      <div class="notes-zone notes-zone--daily" id="daily-recommendations" aria-labelledby="daily-notes-title">
+        <div class="notes-zone-head">
+          <p class="notes-zone-kicker">01C — DAILY RECOMMENDATIONS</p>
+          <h3 class="notes-zone-title" id="daily-notes-title" data-i18n="daily.title">每日推荐区</h3>
+          <p class="notes-zone-lead" data-i18n="daily.lead">按日期归档，每天一篇合集：原始资料、详细解读与项目联系。</p>
+        </div>
+        <div class="notes-grid" id="daily-notes-grid" aria-live="polite"></div>
+        <nav class="notes-pagination" id="daily-pagination" aria-label="推荐日期归档 / Daily archive pages" hidden></nav>
+      </div>
 
       <div class="notes-zone" aria-labelledby="project-notes-title">
         <div class="notes-zone-head">
