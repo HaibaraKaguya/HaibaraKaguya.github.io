@@ -2,6 +2,141 @@ document.documentElement.classList.add('js');
 
 const NOTES = [
 {
+  "id": "11",
+  "zone": "daily",
+  "order": 160,
+  "accent": "#3affd6",
+  "repo": "WebSwarm / Agent orchestration",
+  "url": "https://arxiv.org/abs/2607.08662",
+  "date": "2026-10-17",
+  "zh": {
+    "cat": "2026-10-17 / 每日推荐",
+    "status": "论文与源码已读 · 决策可靠性待验证",
+    "title": "递归委派的决策边界、证据反馈与实验归因｜2026-10-17｜WebSwarm",
+    "excerpt": "从动态分工的过渡态追到提示词与代码，区分执行完成和验收通过，结合等预算实验与 CEO 账单模式整理研究问题。",
+    "sections": [
+      {
+        "h": "资料与边界：近期预印本，已读论文与源码，未复现",
+        "p": "WebSwarm: Recursive Multi-Agent Orchestration for Deep-and-Wide Web Search，arXiv:2607.08662，首次提交 2026-07-09。2026-10-17 阅读时原始页面标注 Work in progress，未核实正式会议或期刊录用；不能标为 CCF A 或某区论文。作者来自中国人民大学高瓴人工智能学院与快手科技。源码静态检查固定于 40c9aacad7cd6e9cdb3e7add954d59b766425717；当日仓库约 21 Stars，数量仅为当时快照。未运行仓库、未复现结果，也未在学院系统实施改造。",
+        "links": [
+          {
+            "label": "论文原始记录",
+            "url": "https://arxiv.org/abs/2607.08662"
+          },
+          {
+            "label": "源码固定版本 · 当日约 21 Stars",
+            "url": "https://github.com/songxiaoshuai/WebSwarm/tree/40c9aacad7cd6e9cdb3e7add954d59b766425717"
+          }
+        ]
+      },
+      {
+        "h": "核心机制：任务树随证据生长",
+        "p": "三个问题是递归拆分太浅、协作方式固定、任务拆分与网页证据组织错位。对应机制为：目标与模式绑定的递归委派；根据返回证据继续展开、补查或汇总；先探查网页信息分布，再确定分工维度；先做少量同类任务，把有效搜索经验传给后续兄弟节点。\n\natom 直接查询明确事实；deep 组织候选搜索与独立验证；wide 对已知或待发现的对象进行批量调查并可继续嵌套；entity_collect 用多条路径找全对象集合。四种模式不等于固定四个 agent。"
+      },
+      {
+        "h": "阅读与写作：从痛点追到机制，再追到证据",
+        "p": "引言一般按背景、已有工作、具体缺口、解决思路、贡献展开。Related Work 交代研究位置，不必为了理解机制先逐篇读完引用。本文 PDF 第 2 页列三个不足，第 4 页描述递归委派，第 5—7 页是实验，第 10 页为算法；第 16—18 页提供负责人、网页探查与经验提炼提示词。\n\n精读时沿一个自己的问题追踪：作者定义了什么状态，什么新观察触发下一步，哪段代码真正实现，再看实验是否隔离验证。公式中的函数名只是接口描述，Ready、Delegate、Aggregate 不自动给出可靠判定规则。"
+      },
+      {
+        "h": "实验怎样组织：总体效果、消融、成本与泛化",
+        "p": "评估覆盖 BrowseComp-Plus 随机 200 题、WideSearch 英文 100 题、DeepWideSearch 英文 76 题、GISA 373 题。主要统一底层 GLM-4.5 与工具配置，比较单 agent 和多个编排方法。附录说明运行两次取平均。\n\n主表中 BrowseComp-Plus 准确率由 ReAct 50.50 到 WebSwarm 68.00，提升 17.50 个百分点；最强多 agent 对照 64.50，差距为 3.50 个百分点。WideSearch Item F1=74.37，但整表成功率仅 7.00%，不能把局部得分读作任务完成率。F1 同时涉及准确与覆盖，不是简单正确格子百分比。"
+      },
+      {
+        "h": "消融告诉我们：每个设计的作用不能凭想象",
+        "p": "禁止下级继续委派后，深度准确率 68.00→63.50，广度 Item F1 74.37→68.38；单一 wide/deep 模式的效果依任务变化。\n\n去掉网页探查，WideSearch Item F1 从 74.37 略升到 74.90，但工具调用从 137.03 增至 239.90。它主要支持减少探索开销，不支持提高准确率。去掉经验复用，两套广度相关测试的 Item F1 均下降；不能据此认定经验总能节省调用。\n\n图 3 深度难题上，ReAct 0、WebSwarm 35.7，但工具调用约 43 对 1215；提升伴随更多投入。需要等 token/工具预算对照才能进一步区分机制收益与额外计算。难度按 ReAct 表现分组，不是独立绝对难度；主表未充分展示波动和置信区间。"
+      },
+      {
+        "h": "源码中的过渡态：真正的决策位于提示词与反馈循环",
+        "p": "关键观察不是创建节点的构造函数，而是决定何时创建它。wide 提示词先区分：名单未知→DISCOVER/entity_collect；分支仍有批量调查维度→EXPAND/wide；明确对象与少量属性→LEAF/atom。任务与已返回工具消息进入下一次 llm_infer，模型选择下一动作，结果再追加到 messages，形成反馈循环。\n\n网页探查若发现完整汇总页，提示词要求先派单个 atom 提取，再只对缺口补查；资料分散则按实际组织轴分工。当前源码只在 Root 直接创建的第一层 wide 启用初始探查，不能理解为每个递归节点都必定侦察。本文没有独立复杂度检测器，也没有保证合理拆分的显式最优规则。",
+        "links": [
+          {
+            "label": "决定 DISCOVER / EXPAND / LEAF 的提示词",
+            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/verbs/wide_agent/prompts.py"
+          },
+          {
+            "label": "决策输入、执行与反馈循环",
+            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/verbs/wide_agent/wide_node.py"
+          }
+        ]
+      },
+      {
+        "h": "任务、状态与隔离：结构化派工不等于结构化证据",
+        "p": "Root 用 solve_subtask(task, verb) 工具参数派工，程序解析后在内存中调用 run_verb。task 内仍是自然语言。完整返回字典保留 answer、status、steps、messages、trajectory、tool_states、child_results；父模型主要看到整理后的任务、状态与答案文本。实验 JSON 是日志，不是 agent 领取任务的共享账单。\n\n每个节点独立 messages 和工具环境，不自动继承父级或兄弟完整对话。经验以文本前缀明确注入；特定 entity_collect 路径补充上层任务背景。验证者接收待核查声明，独立找来源；上下文隔离不是操作系统安全沙箱。\n\ncompleted 主要表示正常提交，不等于事实正确、验收通过或依赖就绪。",
+        "links": [
+          {
+            "label": "Root 派工与结果回传",
+            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/root_node.py"
+          },
+          {
+            "label": "叶节点上下文初始化",
+            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/base_react_agent.py"
+          },
+          {
+            "label": "实验 JSON 日志",
+            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/run_main.py"
+          }
+        ]
+      },
+      {
+        "h": "顺序与递归：负责人等待、批内并行、阶段屏障",
+        "p": "Root 同步等待子任务结束再作下一轮决策，每轮保留一个工具调用。wide 用线程池并行执行同批任务，收齐后回传，同批共用一个模式；当前没有总账单式 depends_on DAG 调度器。递归 wide 创建新 WideNode，depth+1，再运行相同流程。默认 wide 深度参数为 4、每个 wide 线程池最多 10 个工作线程，不是全局最多 10 个 agent。\n\n经验路径先运行两个试点，再总结经验，之后启动剩余批次；当前实际经验提炼仅对 atom 批次开启，并受功能开关与任务数约束。模型提出派工请求，程序执行参数校验与递归限制。",
+        "links": [
+          {
+            "label": "并行、递归与 scout/fanout 阶段",
+            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/verbs/wide_agent/dispatch.py"
+          },
+          {
+            "label": "经验提炼启用条件",
+            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/verbs/wide_agent/experience.py"
+          }
+        ]
+      },
+      {
+        "h": "关键质疑：提示词决策需要额外的机制验证",
+        "p": "提示词驱动不意味着端到端实验无效，但决策可解释性、跨运行稳定性与效果归因仍需检验。应评估漏拆、过拆、覆盖与依赖错误、提示词改写敏感性；并与简单策略在相近总预算下比较。把阈值改写成代码也不自动正确，阈值仍须实验验证。\n\n保守路线：保留模型决策，记录并审计行为。稳步路线：模型提议分工，程序检查覆盖、依赖、重复、预算与停止条件。激进路线：训练决策策略，再用独立测试评估。三条均为讨论方案，未实施；不将个体投稿预测写成录用事实。"
+      },
+      {
+        "h": "与 CEO 账单模式的联系及后续研究问题",
+        "p": "用户设计：CEO 维护简洁总账单与每个 agent 的分账单，总账单明确接口规范和依赖。WebSwarm 提供独立上下文、按需派工与反馈，但共享接口契约和显式依赖调度不是其运行中心。可借鉴完整档案与简洁回执分离，重点补足已提交/已验收两种状态、接口版本、下游放行与失败传播。\n\n候选假设：在相近预算下，显式依赖和验收约束能否比仅提示词驱动的委派减少无效分工与接口错误？先检索最接近的工作，再用可控任务比较。不是仅实现“能自动生成 agent”，而是研究它在什么条件下应该创建、何时不该创建。"
+      },
+      {
+        "h": "科研检索工作流：先找最接近、最可能否定自己的工作",
+        "p": "讨论了 David Stuckler 的 How I Find Research Gaps With Claude 视频：从宽泛领域收敛问题，沿引用关系梳理争论，从原文提取候选缺口，找最近邻论文，再做 duplication test 检查已有工作。AI 用于压力测试，真实 DOI 并不保证解释或创新性判断正确。\n\nTopic Validator 找到公开 ZIP 地址但访问返回 403，未验证内容；研究计划和提取表审查有演示，未核实独立下载。FastTrack Literature Connector 为文献检索 MCP，不是 Skill，也不提供付费全文的自动访问权。未经用户要求不额外保存本地材料。",
+        "links": [
+          {
+            "label": "视频原始入口",
+            "url": "https://www.youtube.com/watch?v=vvrVk1nsZnU"
+          },
+          {
+            "label": "文献连接器官方说明",
+            "url": "https://literature.researchfasttrack.com/"
+          }
+        ]
+      }
+    ]
+  },
+  "en": {
+    "cat": "2026-10-17 / Daily recommendations",
+    "status": "Paper and code reviewed · Decision reliability unverified",
+    "title": "Decision boundaries, evidence feedback and evaluation of recursive delegation | 2026-10-17 | WebSwarm",
+    "excerpt": "A critical reading of runtime delegation decisions, context isolation, cost confounds and explicit interface/dependency contracts.",
+    "sections": [
+      {
+        "h": "Scope and mechanism",
+        "p": "Read arXiv:2607.08662 and source commit 40c9aacad7cd6e9cdb3e7add954d59b766425717 on October 17. The record was a work-in-progress preprint; no formal acceptance was verified. No reproduction was run. WebSwarm combines recursive objective-mode delegation, web-structure probing and within-task sibling experience reuse."
+      },
+      {
+        "h": "Runtime decisions and implementation boundaries",
+        "p": "Prompts choose discovery for unknown entity lists, wide expansion for branches with further collection dimensions, and atom for narrow lookups. Tool results update each private conversation before the next model call. Delegation uses in-memory function calls; JSON files are experiment logs. Root runs sequentially, wide batches run concurrently, and scout/fanout phases have explicit barriers. Completed means normal submission, not verified correctness."
+      },
+      {
+        "h": "Evidence and proposed next step",
+        "p": "Ablations support recursion and experience reuse; probing mostly reduces tool requests rather than improving scores. Hard-task gains accompany substantially greater tool use. Two-run means without strong uncertainty reporting and matched-budget comparisons limit attribution. A proposed project experiment would compare prompt-only delegation with explicit dependency, interface and acceptance constraints under comparable budgets. This remains unimplemented."
+      }
+    ]
+  }
+},
+{
   "id": "10",
   "zone": "project",
   "order": 150,
@@ -915,6 +1050,17 @@ const SYSTEMS = [
 ];
 
 const TIMELINE = [
+{
+  "year": "2026.10.17",
+  "zh": {
+    "t": "每日推荐：WebSwarm 递归委派与决策验证",
+    "d": "整理论文、固定源码、实验成本与提示词决策边界，连接 CEO 账单模式；未复现，改造与实验待验证。"
+  },
+  "en": {
+    "t": "Daily: WebSwarm delegation and decision evaluation",
+    "d": "Reviewed pinned code, evidence flow, cost confounds and explicit dependency contracts; no reproduction or implementation."
+  }
+},
 {
   "year": "2026.10.12",
   "zh": {
