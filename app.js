@@ -2,6 +2,73 @@ document.documentElement.classList.add('js');
 
 const NOTES = [
 {
+  "id": "12",
+  "zone": "daily",
+  "order": 170,
+  "accent": "#3affd6",
+  "repo": "Small agents / Orchestration",
+  "url": "https://arxiv.org/abs/2601.11327",
+  "date": "2026-10-18",
+  "zh": {
+    "cat": "2026-10-18 / 每日推荐",
+    "status": "论文已读 · 未复现",
+    "title": "推理放在哪里，信息交给谁：小模型团队的协作条件｜2026-10-18｜Small Agents",
+    "excerpt": "分工不自动产生收益：从编排器显式推理、结构化记忆的读写权限与工具调用变化，提炼对自己多 Agent 项目的启发。",
+    "sections": [
+      {
+        "h": "把任务拆给多个 Agent，不一定更有效",
+        "p": "这篇论文让我重新关注两个问题：谁负责推理，以及中间信息如何传递。\n\n在论文的 8B 模型实验中，不开启显式推理时，多 Agent 系统的 GAIA 准确率为 12.7%，低于单 Agent 直接使用工具的 15.2%。只有编排器开启显式推理后，团队准确率升至 23.0%。仅让子 Agent 思考，收益较小；所有成员都思考，也没有带来同等幅度的额外收益。\n\n我学到的是：分工本身不会自动产生协作收益。拆解任务、选择工具、整合结果这些全局决策，可能比执行者各自增加推理更重要。应先检查编排器是否把工作安排清楚，再考虑增加成员或扩大子模型。这里的显式推理指模型生成推理序列，不是 Agent 之间的交流链，也不是 temperature 开关。"
+      },
+      {
+        "h": "结构化记忆的关键，不只是格式，还有读写权限",
+        "p": "系统没有在成员之间反复传递完整历史，而是将中间信息整理为四类：问题分析、已执行步骤、工具结果和子目标。\n\n编排器与子 Agent 都可以写入这份记忆，但只有编排器能读。子 Agent 之间不直接交流；一个成员的结果要影响另一个成员，需要经过编排器读取、整合和再次分派。\n\n这让我区分了结构化输出与信息访问权限：前者规定信息怎样表达，后者规定谁能看到、利用这些信息。这篇采用集中读取与协调，是我对照自己项目信息传递机制时最关注的差异。子 Agent 所需的上下文仍需由任务输入提供；读取限制不意味着它无需任何背景。"
+      },
+      {
+        "h": "结构化记忆有消融，但内部机制仍未充分拆开",
+        "p": "固定为 8B 多 Agent、只有编排器思考时，去掉结构化记忆，AIME 从 55.0% 降到 36.7%，GPQA 从 58.6% 降到 50.5%；但 MuSiQue 从 14.0% 升到 18.0%。因此，当前记忆实现对部分推理任务有明显帮助，却不是所有任务都受益。\n\n这项消融没有单独比较不同字段、完整历史与摘要，也没有比较“只有编排器读”与“子 Agent 也能读”。它不能直接证明某种信息传递方向更优。"
+      },
+      {
+        "h": "调用更少，不等于每一步都更合理",
+        "p": "开启编排器推理后，工具调用明显减少，但可能来自更准确的规划，也可能来自跳过必要工具。附录展示了模型不再调用代码、自行计数却答错的例子。\n\n文件检查调用骤减尤其值得追问：思考不能凭空获得附件内容。减少的究竟是重复读取、错误调用，还是必要读取？论文没有逐项解释。它给出的一个表格案例中，两种设置都调用文件检查 2 次，区别是开启思考后更好地利用了数据。这个案例支持结果利用改善，并不解释总体读取次数为何骤减。\n\n我以后分析自己的系统时，不能只看总调用数，还要检查减少的是冗余交接还是必要信息获取，并配对比较每道题的正确性。"
+      },
+      {
+        "h": "这篇论文的特点与我保留的判断",
+        "p": "它用相对简单的集中编排架构，比较模型规模、显式推理的位置和组件作用。小模型团队在部分任务中胜过大模型，例如 AIME 为 55.0% 对 45.0%；GAIA 打平，另外几项仍落后，不能概括为全面胜出。\n\n多 Agent 组还同时使用结构化记忆与不同的上下文组织，不能把全部提升都归功于协作。对我的项目，最值得继续研究的是：生成什么、传递什么、保存什么，以及哪些状态允许下一步执行。阅读论文尚不等于验证或实施这些设计。"
+      },
+      {
+        "h": "论文入口",
+        "p": "Can Small Agents Collaborate to Beat a Single Large Language Model? 本地阅读版本标注 ICLR 2026 Workshop on MALGAI，应与 ICLR 主会区分。阅读记录日期：2026-10-18；未复现。",
+        "links": [
+          {
+            "label": "论文原始记录",
+            "url": "https://arxiv.org/abs/2601.11327"
+          }
+        ]
+      }
+    ]
+  },
+  "en": {
+    "cat": "2026-10-18 / Daily recommendations",
+    "status": "Paper reviewed · Not reproduced",
+    "title": "Where reasoning happens and who reads state | 2026-10-18 | Small Agents",
+    "excerpt": "Lessons on orchestrator thinking, asymmetric memory access and the limits of tool-call reductions.",
+    "sections": [
+      {
+        "h": "Planning before scaling",
+        "p": "On GAIA, the 8B MAS without thinking scores 12.7 versus 15.2 for direct single-agent tool use. Orchestrator-only thinking raises MAS accuracy to 23.0. Collaboration alone does not ensure gains; stronger evidence supports reasoning placement rather than universally larger models."
+      },
+      {
+        "h": "Memory and information flow",
+        "p": "Both orchestrator and sub-agents write four categories of structured memory, but only the orchestrator reads it. Information format, access rights and reasoning are distinct design choices. Removing memory hurts AIME and GPQA but improves MuSiQue, so this implementation is not universally beneficial."
+      },
+      {
+        "h": "Read outcomes together with costs",
+        "p": "Fewer tool calls can mean less redundancy or skipped necessary work. The paper does not fully explain the collapse in file-inspector calls. Small-agent teams match or beat the 32B direct baseline on some tasks, not all. Memory and context organization also differ across architectures. No reproduction is claimed; the local PDF is labeled ICLR 2026 MALGAI Workshop."
+      }
+    ]
+  }
+},
+{
   "id": "11",
   "zone": "daily",
   "order": 160,
@@ -12,104 +79,52 @@ const NOTES = [
   "zh": {
     "cat": "2026-10-17 / 每日推荐",
     "status": "论文与源码已读 · 决策可靠性待验证",
-    "title": "递归委派的决策边界、证据反馈与实验归因｜2026-10-17｜WebSwarm",
-    "excerpt": "从动态分工的过渡态追到提示词与代码，区分执行完成和验收通过，结合等预算实验与 CEO 账单模式整理研究问题。",
+    "title": "状态如何改变下一步决策：递归分工与经验传递｜2026-10-17｜WebSwarm",
+    "excerpt": "从状态回执追到下一次派工，理解任务内经验复用、资料分布指导分工，以及与 CEO 总账单、分账单设计的差异。",
     "sections": [
       {
-        "h": "资料与边界：近期预印本，已读论文与源码，未复现",
-        "p": "WebSwarm: Recursive Multi-Agent Orchestration for Deep-and-Wide Web Search，arXiv:2607.08662，首次提交 2026-07-09。2026-10-17 阅读时原始页面标注 Work in progress，未核实正式会议或期刊录用；不能标为 CCF A 或某区论文。作者来自中国人民大学高瓴人工智能学院与快手科技。源码静态检查固定于 40c9aacad7cd6e9cdb3e7add954d59b766425717；当日仓库约 21 Stars，数量仅为当时快照。未运行仓库、未复现结果，也未在学院系统实施改造。",
+        "h": "我学到的第一点：传回状态，是为了改变下一步决策",
+        "p": "WebSwarm 面向需要深挖证据与批量调查的复杂搜索任务。它给我最直接的启发，是子任务结果如何成为上层的下一次决策输入。\n\nRoot 通过 solve_subtask(task, verb) 发出任务，程序在内存中调用对应执行流程。子任务结束后，程序保留 answer、status、steps、messages、trajectory 等完整记录；交给父模型的则主要是任务、执行模式、状态与答案构成的简洁回执。实验输出的 JSON 是日志，并不是所有 Agent 领取任务的共享账单。\n\n这里值得借鉴的是“完整档案与决策回执分离”：保留过程供检查，同时避免把全部子任务历史塞进上层上下文。更关键的是，completed 只代表正常提交，不保证答案正确，也不代表下游依赖已满足。已提交、已验收、允许下游运行，应当分别表达。",
         "links": [
           {
-            "label": "论文原始记录",
-            "url": "https://arxiv.org/abs/2607.08662"
-          },
-          {
-            "label": "源码固定版本 · 当日约 21 Stars",
-            "url": "https://github.com/songxiaoshuai/WebSwarm/tree/40c9aacad7cd6e9cdb3e7add954d59b766425717"
+            "label": "任务下发与结果回传：固定源码",
+            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/root_node.py"
           }
         ]
       },
       {
-        "h": "核心机制：任务树随证据生长",
-        "p": "三个问题是递归拆分太浅、协作方式固定、任务拆分与网页证据组织错位。对应机制为：目标与模式绑定的递归委派；根据返回证据继续展开、补查或汇总；先探查网页信息分布，再确定分工维度；先做少量同类任务，把有效搜索经验传给后续兄弟节点。\n\natom 直接查询明确事实；deep 组织候选搜索与独立验证；wide 对已知或待发现的对象进行批量调查并可继续嵌套；entity_collect 用多条路径找全对象集合。四种模式不等于固定四个 agent。"
-      },
-      {
-        "h": "阅读与写作：从痛点追到机制，再追到证据",
-        "p": "引言一般按背景、已有工作、具体缺口、解决思路、贡献展开。Related Work 交代研究位置，不必为了理解机制先逐篇读完引用。本文 PDF 第 2 页列三个不足，第 4 页描述递归委派，第 5—7 页是实验，第 10 页为算法；第 16—18 页提供负责人、网页探查与经验提炼提示词。\n\n精读时沿一个自己的问题追踪：作者定义了什么状态，什么新观察触发下一步，哪段代码真正实现，再看实验是否隔离验证。公式中的函数名只是接口描述，Ready、Delegate、Aggregate 不自动给出可靠判定规则。"
-      },
-      {
-        "h": "实验怎样组织：总体效果、消融、成本与泛化",
-        "p": "评估覆盖 BrowseComp-Plus 随机 200 题、WideSearch 英文 100 题、DeepWideSearch 英文 76 题、GISA 373 题。主要统一底层 GLM-4.5 与工具配置，比较单 agent 和多个编排方法。附录说明运行两次取平均。\n\n主表中 BrowseComp-Plus 准确率由 ReAct 50.50 到 WebSwarm 68.00，提升 17.50 个百分点；最强多 agent 对照 64.50，差距为 3.50 个百分点。WideSearch Item F1=74.37，但整表成功率仅 7.00%，不能把局部得分读作任务完成率。F1 同时涉及准确与覆盖，不是简单正确格子百分比。"
-      },
-      {
-        "h": "消融告诉我们：每个设计的作用不能凭想象",
-        "p": "禁止下级继续委派后，深度准确率 68.00→63.50，广度 Item F1 74.37→68.38；单一 wide/deep 模式的效果依任务变化。\n\n去掉网页探查，WideSearch Item F1 从 74.37 略升到 74.90，但工具调用从 137.03 增至 239.90。它主要支持减少探索开销，不支持提高准确率。去掉经验复用，两套广度相关测试的 Item F1 均下降；不能据此认定经验总能节省调用。\n\n图 3 深度难题上，ReAct 0、WebSwarm 35.7，但工具调用约 43 对 1215；提升伴随更多投入。需要等 token/工具预算对照才能进一步区分机制收益与额外计算。难度按 ReAct 表现分组，不是独立绝对难度；主表未充分展示波动和置信区间。"
-      },
-      {
-        "h": "源码中的过渡态：真正的决策位于提示词与反馈循环",
-        "p": "关键观察不是创建节点的构造函数，而是决定何时创建它。wide 提示词先区分：名单未知→DISCOVER/entity_collect；分支仍有批量调查维度→EXPAND/wide；明确对象与少量属性→LEAF/atom。任务与已返回工具消息进入下一次 llm_infer，模型选择下一动作，结果再追加到 messages，形成反馈循环。\n\n网页探查若发现完整汇总页，提示词要求先派单个 atom 提取，再只对缺口补查；资料分散则按实际组织轴分工。当前源码只在 Root 直接创建的第一层 wide 启用初始探查，不能理解为每个递归节点都必定侦察。本文没有独立复杂度检测器，也没有保证合理拆分的显式最优规则。",
+        "h": "我真正想学的过渡态：什么信息触发继续拆分",
+        "p": "只看“怎样创建 Agent”的代码，还看不到编排决策。昨天最重要的追问是：模型看到了什么，才决定创建子节点、补查或结束？\n\n源码提示词要求：名单未知时，先用 entity_collect 找对象；分支仍包含批量调查维度时，继续用 wide 分工；已收敛到明确对象的少量属性时，使用 atom 查询。新返回的结果加入当前节点的 messages，再进入下一轮模型调用。\n\n例如，调查多个品牌的机型参数：先找品牌名单，再按品牌查机型；机型确定后，才分派具体参数查询。若发现一张汇总页已覆盖多数需求，便可能改为先提取汇总页、再补缺口。这个例子用于解释决策规则，并非实测轨迹。\n\n它没有独立的复杂度检测器，主要由模型依据提示词和当前证据选择动作；程序限制递归深度等执行边界。因此，允许动态拆分，不等于已经证明每次拆分都合理。",
         "links": [
           {
-            "label": "决定 DISCOVER / EXPAND / LEAF 的提示词",
+            "label": "决策规则所在的提示词",
             "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/verbs/wide_agent/prompts.py"
           },
           {
-            "label": "决策输入、执行与反馈循环",
+            "label": "观察加入上下文后的决策循环",
             "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/verbs/wide_agent/wide_node.py"
           }
         ]
       },
       {
-        "h": "任务、状态与隔离：结构化派工不等于结构化证据",
-        "p": "Root 用 solve_subtask(task, verb) 工具参数派工，程序解析后在内存中调用 run_verb。task 内仍是自然语言。完整返回字典保留 answer、status、steps、messages、trajectory、tool_states、child_results；父模型主要看到整理后的任务、状态与答案文本。实验 JSON 是日志，不是 agent 领取任务的共享账单。\n\n每个节点独立 messages 和工具环境，不自动继承父级或兄弟完整对话。经验以文本前缀明确注入；特定 entity_collect 路径补充上层任务背景。验证者接收待核查声明，独立找来源；上下文隔离不是操作系统安全沙箱。\n\ncompleted 主要表示正常提交，不等于事实正确、验收通过或依赖就绪。",
+        "h": "分工前看资料分布，批量执行前先积累经验",
+        "p": "网页结构线索，指所需证据在网上如何分布，而不只是网页 HTML。信息集中在汇总表时，逐对象派工可能造成重复检索；资料分散在产品页、年份或机构下时，分工维度应随资料组织方式调整。范围是查哪些内容，粒度是每份任务多大，维度是按什么标准拆。\n\n另一项机制是任务内经验复用：先执行少量同类试点，从轨迹中总结可靠来源、有效查询方式和失败路径，再把经验注入后续兄弟任务。传递的是求解方法，而不是把一个对象的答案复制给另一个对象，也不是建立跨任务长期记忆。\n\n固定源码中的初始网页探查只在 Root 直接创建的第一层 wide 启用；实际经验提炼针对符合条件的 atom 批次，不能理解为所有节点都自动共享经验。"
+      },
+      {
+        "h": "与我的 CEO 账单设计对照：格式之外，还要定义可见性和验收",
+        "p": "我原来的设计是 CEO 维护简洁总账单，为每个 Agent 写分账单；总账单包括接口规范与依赖。WebSwarm 的相近之处是按需派工、独立上下文和结果回传；不同之处是，它并不以显式依赖账单作为调度中心。\n\n每个节点有自己的消息历史，不自动继承父级和兄弟的完整对话；需要传递的任务背景与经验，要明确放入输入。Root 等子任务返回后再作下一轮决策；wide 在批内并行，收齐后继续；试点、经验提炼、后续批次之间由代码保证阶段顺序。\n\n对我的启发是：不仅规定交付的结构，还要规定谁能读什么、什么结果满足接口、何种验收状态才能放行下游。上下文隔离也不等于操作系统安全权限。"
+      },
+      {
+        "h": "我怎样判断这些设计是否真的有效",
+        "p": "消融实验不是把系统功能再介绍一遍，而是移除一个机制，检查效果与代价怎样变化。禁止继续递归委派后，深度任务准确率由 68.00 降到 63.50，广度任务 Item F1 由 74.37 降到 68.38。\n\n网页探查的结论更值得记住：去掉它，WideSearch Item F1 从 74.37 略升到 74.90，但平均工具调用从 137.03 增至 239.90。它在这组结果中主要体现为减少开销，不能写成提高准确率。\n\n部分难题的提升还伴随更多工具调用。因此，评价我的编排机制时，应在相近预算下比较，并检查过拆、漏拆、依赖错误和决策稳定性。阅读公式和提示词后，要继续追问它的判断被验证到了哪一层。"
+      },
+      {
+        "h": "资料与阅读边界",
+        "p": "WebSwarm: Recursive Multi-Agent Orchestration for Deep-and-Wide Web Search。本文依据 2026-10-17 的论文阅读与固定源码讨论整理，未复现；当时未确认正式录用。项目对照是设计启发，尚未实施。",
         "links": [
           {
-            "label": "Root 派工与结果回传",
-            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/root_node.py"
-          },
-          {
-            "label": "叶节点上下文初始化",
-            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/base_react_agent.py"
-          },
-          {
-            "label": "实验 JSON 日志",
-            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/run_main.py"
-          }
-        ]
-      },
-      {
-        "h": "顺序与递归：负责人等待、批内并行、阶段屏障",
-        "p": "Root 同步等待子任务结束再作下一轮决策，每轮保留一个工具调用。wide 用线程池并行执行同批任务，收齐后回传，同批共用一个模式；当前没有总账单式 depends_on DAG 调度器。递归 wide 创建新 WideNode，depth+1，再运行相同流程。默认 wide 深度参数为 4、每个 wide 线程池最多 10 个工作线程，不是全局最多 10 个 agent。\n\n经验路径先运行两个试点，再总结经验，之后启动剩余批次；当前实际经验提炼仅对 atom 批次开启，并受功能开关与任务数约束。模型提出派工请求，程序执行参数校验与递归限制。",
-        "links": [
-          {
-            "label": "并行、递归与 scout/fanout 阶段",
-            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/verbs/wide_agent/dispatch.py"
-          },
-          {
-            "label": "经验提炼启用条件",
-            "url": "https://github.com/songxiaoshuai/WebSwarm/blob/40c9aacad7cd6e9cdb3e7add954d59b766425717/webswarm/verbs/wide_agent/experience.py"
-          }
-        ]
-      },
-      {
-        "h": "关键质疑：提示词决策需要额外的机制验证",
-        "p": "提示词驱动不意味着端到端实验无效，但决策可解释性、跨运行稳定性与效果归因仍需检验。应评估漏拆、过拆、覆盖与依赖错误、提示词改写敏感性；并与简单策略在相近总预算下比较。把阈值改写成代码也不自动正确，阈值仍须实验验证。\n\n保守路线：保留模型决策，记录并审计行为。稳步路线：模型提议分工，程序检查覆盖、依赖、重复、预算与停止条件。激进路线：训练决策策略，再用独立测试评估。三条均为讨论方案，未实施；不将个体投稿预测写成录用事实。"
-      },
-      {
-        "h": "与 CEO 账单模式的联系及后续研究问题",
-        "p": "用户设计：CEO 维护简洁总账单与每个 agent 的分账单，总账单明确接口规范和依赖。WebSwarm 提供独立上下文、按需派工与反馈，但共享接口契约和显式依赖调度不是其运行中心。可借鉴完整档案与简洁回执分离，重点补足已提交/已验收两种状态、接口版本、下游放行与失败传播。\n\n候选假设：在相近预算下，显式依赖和验收约束能否比仅提示词驱动的委派减少无效分工与接口错误？先检索最接近的工作，再用可控任务比较。不是仅实现“能自动生成 agent”，而是研究它在什么条件下应该创建、何时不该创建。"
-      },
-      {
-        "h": "科研检索工作流：先找最接近、最可能否定自己的工作",
-        "p": "讨论了 David Stuckler 的 How I Find Research Gaps With Claude 视频：从宽泛领域收敛问题，沿引用关系梳理争论，从原文提取候选缺口，找最近邻论文，再做 duplication test 检查已有工作。AI 用于压力测试，真实 DOI 并不保证解释或创新性判断正确。\n\nTopic Validator 找到公开 ZIP 地址但访问返回 403，未验证内容；研究计划和提取表审查有演示，未核实独立下载。FastTrack Literature Connector 为文献检索 MCP，不是 Skill，也不提供付费全文的自动访问权。未经用户要求不额外保存本地材料。",
-        "links": [
-          {
-            "label": "视频原始入口",
-            "url": "https://www.youtube.com/watch?v=vvrVk1nsZnU"
-          },
-          {
-            "label": "文献连接器官方说明",
-            "url": "https://literature.researchfasttrack.com/"
+            "label": "论文原始记录",
+            "url": "https://arxiv.org/abs/2607.08662"
           }
         ]
       }
@@ -118,20 +133,20 @@ const NOTES = [
   "en": {
     "cat": "2026-10-17 / Daily recommendations",
     "status": "Paper and code reviewed · Decision reliability unverified",
-    "title": "Decision boundaries, evidence feedback and evaluation of recursive delegation | 2026-10-17 | WebSwarm",
-    "excerpt": "A critical reading of runtime delegation decisions, context isolation, cost confounds and explicit interface/dependency contracts.",
+    "title": "State feedback, recursive delegation and experience transfer | 2026-10-17 | WebSwarm",
+    "excerpt": "What I learned about state handoffs, runtime decisions, sibling experience reuse and explicit dependency contracts.",
     "sections": [
       {
-        "h": "Scope and mechanism",
-        "p": "Read arXiv:2607.08662 and source commit 40c9aacad7cd6e9cdb3e7add954d59b766425717 on October 17. The record was a work-in-progress preprint; no formal acceptance was verified. No reproduction was run. WebSwarm combines recursive objective-mode delegation, web-structure probing and within-task sibling experience reuse."
+        "h": "State handoffs and decisions",
+        "p": "The program retains full execution records, while the parent model receives a concise task/status/answer receipt. Completed indicates submission, not validated correctness or dependency readiness. Tool observations update private node contexts and inform the next delegation decision."
       },
       {
-        "h": "Runtime decisions and implementation boundaries",
-        "p": "Prompts choose discovery for unknown entity lists, wide expansion for branches with further collection dimensions, and atom for narrow lookups. Tool results update each private conversation before the next model call. Delegation uses in-memory function calls; JSON files are experiment logs. Root runs sequentially, wide batches run concurrently, and scout/fanout phases have explicit barriers. Completed means normal submission, not verified correctness."
+        "h": "Delegation and experience",
+        "p": "Unknown entity lists trigger discovery; collection dimensions trigger wide expansion; narrow lookups use atom. Web evidence distribution can change the decomposition. Trial siblings supply within-task procedural experience to later peers. Prompt-based decisions still require reliability and matched-budget evaluation."
       },
       {
-        "h": "Evidence and proposed next step",
-        "p": "Ablations support recursion and experience reuse; probing mostly reduces tool requests rather than improving scores. Hard-task gains accompany substantially greater tool use. Two-run means without strong uncertainty reporting and matched-budget comparisons limit attribution. A proposed project experiment would compare prompt-only delegation with explicit dependency, interface and acceptance constraints under comparable budgets. This remains unimplemented."
+        "h": "Project connection and evidence",
+        "p": "My CEO design uses a concise master ledger and per-agent ledgers with interface contracts and dependencies. WebSwarm instead relies on recursive calls, private contexts and returned observations. Removing recursion reduces scores; removing probing slightly raises WideSearch F1 but increases tool calls from 137.03 to 239.90. No reproduction or project change is claimed."
       }
     ]
   }
@@ -1051,14 +1066,25 @@ const SYSTEMS = [
 
 const TIMELINE = [
 {
-  "year": "2026.10.17",
+  "year": "2026.10.18",
   "zh": {
-    "t": "每日推荐：WebSwarm 递归委派与决策验证",
-    "d": "整理论文、固定源码、实验成本与提示词决策边界，连接 CEO 账单模式；未复现，改造与实验待验证。"
+    "t": "每日推荐：小模型团队的推理位置与信息权限",
+    "d": "记录编排器显式推理、结构化记忆消融与工具使用边界，连接自己的多 Agent 信息传递设计。"
   },
   "en": {
-    "t": "Daily: WebSwarm delegation and decision evaluation",
-    "d": "Reviewed pinned code, evidence flow, cost confounds and explicit dependency contracts; no reproduction or implementation."
+    "t": "Daily: reasoning placement and memory access",
+    "d": "Lessons from small-agent orchestration, memory ablations and tool-use limitations."
+  }
+},
+{
+  "year": "2026.10.17",
+  "zh": {
+    "t": "每日推荐：WebSwarm 的状态回传与动态派工",
+    "d": "以学习收获重写：完整档案与简洁回执分离、何时继续拆分、任务内经验复用，以及 CEO 账单的接口与验收。"
+  },
+  "en": {
+    "t": "Daily: WebSwarm state handoffs and runtime decisions",
+    "d": "Rewritten around personal learning, context isolation, experience reuse and explicit acceptance contracts."
   }
 },
 {
