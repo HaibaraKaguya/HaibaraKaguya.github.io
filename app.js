@@ -2,6 +2,99 @@ document.documentElement.classList.add('js');
 
 const NOTES = [
 {
+  "id": "13",
+  "zone": "learning",
+  "order": 180,
+  "accent": "#3affd6",
+  "repo": "提示词工程 / 多智能体评估",
+  "url": "https://HaibaraKaguya.github.io/#notes",
+  "date": "2026-10-24",
+  "zh": {
+    "cat": "学习 / 提示词工程与多智能体评估",
+    "status": "概念与实验设计整理 · 未开展实证验证",
+    "title": "面向多智能体编排的提示词评估与优化：敏感性、可复现性与脆弱性｜2026-10-24",
+    "excerpt": "区分提示词敏感性、可复现性与脆弱性，建立覆盖自动评分、成本权衡、指令传达和执行效果的评估流程。",
+    "sections": [
+      {
+        "h": "摘要",
+        "p": "提示词工程不仅涉及指令设计，还涉及提示词在不同表达形式、重复运行和输入扰动下的可靠性。对于多智能体系统，编排器负责将用户需求转化为子代理可执行的指令，其质量直接影响任务执行与最终结果。本文围绕提示词敏感性、可复现性和脆弱性三个核心概念，讨论自动评分、成本权衡及编排器指令评估方法，并提出从任务定义、基线比较到独立测试的实验流程。评估应同时关注指令传达质量与执行结果，避免仅依据单次准确率判断提示词优劣。"
+      },
+      {
+        "h": "1. 研究问题：提示词优化究竟优化什么？",
+        "p": "自动提示词优化通常包含五个环节：生成候选提示词、调用模型执行任务、自动评分、筛选与迭代，以及使用未参与优化的数据进行最终验证。\n\n评分标准决定了优化方向。若只关注某批题目的正确率，优化过程可能得到对特定样本有效，但成本较高、表现不稳定或难以推广的提示词。\n\n提示词评估至少需要回答四个问题：能否准确完成目标任务？重复运行时表现是否稳定？表达方式发生轻微变化后，表现是否明显下降？性能提升是否值得额外的调用成本与等待时间？这些问题分别涉及任务效果、可复现性、敏感性、脆弱性及资源效率。"
+      },
+      {
+        "h": "2.1 敏感性：表达方式变化会带来多大影响？",
+        "p": "提示词敏感性描述模型表现随提示词表达方式变化的程度。同一项任务可以采用不同措辞、段落结构、分隔符、示例顺序和信息排列。如果这些变化没有改变任务含义，却使模型表现明显不同，就说明模型对提示词形式较为敏感。\n\n例如，“根据材料识别三个主要风险，并分别提供证据”与“请列出材料中的三个主要风险；每项风险均需附上对应证据”具有相近目标。敏感性实验关注这类表达变化是否影响任务表现，以及影响有多大。\n\n实验前提是保持语义与约束一致。删除必要条件、修改任务目标或增加冲突要求，已经改变了任务本身，不能直接归入等价表达实验。敏感性体现的是表现随表达变化的程度，其中既可能包含性能下降，也可能包含性能提升。"
+      },
+      {
+        "h": "2.2 可复现性：相同条件下能否重复获得相近结果？",
+        "p": "可复现性关注在明确记录的实验条件下，重复运行能否得到相近结果。即使提示词、任务和模型保持一致，也需要通过实际重复运行检查结果是否稳定。仅报告一次实验，无法区分提示词的持续效果与偶然结果。\n\n可以分别观察总体得分和样本结果：多次运行的正确率是否接近？同一道题是否反复得到一致的判断？两者并不等价，两次运行可能具有相同的总体正确率，但答错的是不同题目。\n\n实验应记录模型版本、提示词版本、数据划分、采样参数、工具状态和运行环境。只有条件足够明确，其他研究者才有可能重复实验并比较结果。"
+      },
+      {
+        "h": "2.3 脆弱性：轻微扰动是否导致明显退化？",
+        "p": "脆弱性关注提示词在轻微扰动下出现性能下降的风险。例如，调整段落顺序、更换分隔符或改写一句指令后，原本能够完成的任务频繁失败，说明该提示词在所测试的扰动下存在脆弱性。\n\n三个概念的区别在于：敏感性关注表达变化后表现改变了多少；可复现性关注固定条件下重复运行是否稳定；脆弱性关注轻微扰动后表现下降了多少。\n\n脆弱性评估可以同时报告平均退化与已测试变体中的最大退化。前者描述常见影响，后者揭示特定变化可能造成的严重失败。结论只能覆盖实际测试的扰动范围，不能据此断言提示词对所有变化都具有鲁棒性。"
+      },
+      {
+        "h": "3. 自动评分：先定义成功，再选择裁判",
+        "p": "自动评分的核心是将任务要求转化为可检查的验收条件，而不是统一交由另一个模型判断回答好不好。\n\n有标准答案的任务适合对照答案评分，例如分类、信息抽取和数值计算；有可执行结果的任务适合测试与运行检查，例如代码测试和文件产物检查；有明确格式的任务适合结构校验，例如必需字段、类型和数量；有业务约束的任务需要规则及状态检查，例如是否使用允许的工具、是否修改指定文件；开放式输出需要评分量表、模型评审与人工抽检。\n\n对于开放式任务，评分量表应将质量拆成目标覆盖、事实正确、证据充分和约束遵守等维度。模型裁判也可能存在偏差，扩大自动评分之前，应先用人工审查的样本校准裁判，检查其是否能够识别关键错误。\n\n结构正确不代表内容正确。输出包含证据字段，只能证明该字段存在，仍需检查证据是否真实支持结论。"
+      },
+      {
+        "h": "4. 准确率、稳定性与成本的权衡",
+        "p": "提示词优化不能仅比较准确率。更长的提示词、更多示例、重复调用和多代理协作，都可能改善任务表现，同时增加费用与耗时。需要判断性能收益是否足以抵偿额外成本。\n\n一种直观方法是以任务得分为基础，对成本、运行波动和扰动退化分别施加惩罚；另一种方法是先规定预算、时延和可靠性门槛，再在满足条件的方案中选择表现最好的提示词。比较规则应提前确定，避免根据最终结果临时调整标准。\n\n实验报告应保留任务准确率或任务完成得分、多次运行的平均表现与波动、等价改写后的性能差异、扰动造成的平均退化与最大退化，以及单任务平均费用与耗时。综合评分可以辅助筛选，但无法替代原始指标，否则成本上升、稳定性下降等问题可能被单一分数掩盖。"
+      },
+      {
+        "h": "5.1 编排器评估：指令传达质量",
+        "p": "在多智能体系统中，编排器承担任务分解、上下文组织和指令生成的职责。评估编排器对子代理的提示词准确率时，应区分指令传达、子代理执行和系统最终效果三个层次。\n\n指令传达质量需要检查：是否保留用户核心目标，是否提供必要材料与依赖，是否完整保留限制条件，是否明确输出要求，以及是否规定信息不足时的处理方式。\n\n这些内容可以通过任务契约组织为明确字段。例如，要求子代理分析报告时，契约应说明报告来源、分析目标、允许使用的材料、输出结构及材料缺失时的处理规则。通用执行原则可放入较简洁的 system prompt，具体任务要求则放入任务契约，以减少约束遗漏并定位失败原因。\n\n关键约束应单独设为通过条件。遗漏“禁止修改原始文件”之类的必要限制，不应被其他项目的高分抵消。"
+      },
+      {
+        "h": "5.2 子代理执行效果与系统最终效果",
+        "p": "子代理执行效果应依据真实验收条件评价，例如代码是否通过测试、分析是否有证据支持、生成文件是否满足要求。\n\n执行成功不能直接证明指令完整。能力较强的子代理可能自行补全遗漏条件；执行失败也不能直接证明编排器出错，因为原因可能来自模型能力、工具异常或输入材料。因此，指令质量与执行效果应分别评价，再结合执行记录分析两者关系。\n\n系统最终效果还需检查各子代理结果能否被正确整合，以及整体流程是否完成用户目标。局部任务成功并不保证系统成功：不同子代理可能采用不一致的假设、重复处理同一工作，或遗漏任务之间的依赖。系统评价应覆盖最终结果、约束遵守、整体费用与总耗时。"
+      },
+      {
+        "h": "6.1 实验流程：任务集与参考基线",
+        "p": "每个案例应包含用户请求、可用材料、必需约束和成功条件。除正常任务外，还应覆盖缺少输入、要求含糊和依赖未满足等情况。此时，正确请求补充信息可以是成功行为，不应一律将拒绝继续执行视为失败。\n\n为同一任务准备人工审查过的参考指令，并与编排器生成的指令比较。在尽量一致的执行条件下，如果参考指令能够支持任务完成，而编排器指令反复失败，可以进一步检查后者是否遗漏条件、引入歧义或提供错误上下文。参考指令本身也需要验证，不能默认其必然正确。"
+      },
+      {
+        "h": "6.2 实验流程：重复运行、扰动与失败归因",
+        "p": "先固定提示词进行重复运行，观察运行本身的波动；再测试经过审查的等价变体，观察表达变化带来的影响。如果每个提示词变体只运行一次，就难以判断得分差异究竟来自表达方式，还是来自运行波动。\n\n失败记录至少应区分五类：任务传达错误，如目标歪曲、约束遗漏；输入组织错误，如材料缺失、依赖未提供；执行错误，即指令明确但结果错误；工具或环境错误，如调用失败、资源不可用；结果整合错误，即子任务正确但最终结论不成立。失败分类决定后续优化方向，并非所有问题都能通过修改提示词解决。\n\n用于生成、筛选和修改提示词的数据，不应同时承担最终效果证明。优化结束后，应在未参与调整的测试集上统一评估，并保留失败案例，以判断改进是否具有推广价值。"
+      },
+      {
+        "h": "7. 工具选择与研究路径",
+        "p": "评测框架、模板管理工具、自动优化器和模型训练工具承担不同职责，不宜直接混为同一类工具比较。应先确定任务与评分标准，再建立批量运行和结果记录机制，最后接入自动搜索。\n\n保守路径：少量任务，人工审查指令与结果，适用于尚未明确评价标准的阶段。\n稳步路径：固定任务集，将规则检查、执行验证与人工抽检结合，建立可重复的评估流程。\n激进路径：自动生成候选并联合优化多模块提示词，适用于评分体系与实验基线已较可靠的阶段。\n\n对于尚处于问题定义阶段的研究，稳步路径更有利于建立可信基线。自动优化应建立在可靠评分之上，否则搜索过程可能放大评分漏洞。"
+      },
+      {
+        "h": "8. 结论与适用边界",
+        "p": "提示词工程需要同时研究任务效果、敏感性、可复现性和脆弱性，并结合成本评价优化收益。面向多智能体编排，评价对象还应包括指令传达、子代理执行和系统整合三个层次。通过明确任务契约、分层评分、重复运行、等价扰动及独立测试，可以建立可检验的评估流程，为后续提示词优化提供依据。\n\n本文为概念与实验设计整理，不报告已完成的性能实验，不将拟议流程视为已验证结论。敏感性、脆弱性与可复现性的具体操作定义，应在实际实验中明确说明。"
+      }
+    ]
+  },
+  "en": {
+    "cat": "Learning / Prompt engineering and multi-agent evaluation",
+    "status": "Conceptual framework · Not empirically validated",
+    "title": "Prompt evaluation for multi-agent orchestration: sensitivity, reproducibility and brittleness | 2026-10-24",
+    "excerpt": "A conceptual framework connecting prompt variation, repeated runs, degradation, evaluation costs and instruction fidelity.",
+    "sections": [
+      {
+        "h": "Scope and core concepts",
+        "p": "Sensitivity concerns performance variation across meaning-preserving prompt variants. Reproducibility concerns repeatability under documented conditions. Brittleness concerns performance degradation under specified perturbations. These dimensions must be reported separately; stable performance can still be inaccurate."
+      },
+      {
+        "h": "Scoring and resource trade-offs",
+        "p": "Use reference answers, executable tests and schema checks where applicable. Open-ended tasks require explicit rubrics, calibrated model judges and human spot checks. Compare accuracy, run variation, perturbation degradation, monetary cost and latency rather than reporting only a composite score."
+      },
+      {
+        "h": "Orchestrator and sub-agent evaluation",
+        "p": "Separate instruction fidelity, sub-agent execution and end-to-end outcomes. Check goals, required inputs, constraints, output requirements and missing-input handling. Critical constraints should be acceptance gates rather than averaged away. Successful execution alone does not prove that instructions were complete."
+      },
+      {
+        "h": "Experimental workflow and limitations",
+        "p": "Build cases and acceptance criteria, validate human-reviewed reference instructions, repeat fixed-prompt runs, test reviewed equivalent variants, classify failures and evaluate on held-out data. Start with a fixed evaluation pipeline before automated optimization. This note proposes an experimental framework and reports no measured improvements."
+      }
+    ]
+  }
+},
+{
   "id": "12",
   "zone": "daily",
   "order": 170,
@@ -1065,6 +1158,17 @@ const SYSTEMS = [
 ];
 
 const TIMELINE = [
+{
+  "year": "2026.10.24",
+  "zh": {
+    "t": "新增学习笔记：提示词评估与多智能体编排",
+    "d": "区分敏感性、可复现性与脆弱性，整理自动评分、成本权衡和编排器—子代理分层评估。"
+  },
+  "en": {
+    "t": "Learning: prompt evaluation and orchestration",
+    "d": "Sensitivity, reproducibility, brittleness, scoring, cost trade-offs and layered orchestrator evaluation."
+  }
+},
 {
   "year": "2026.10.18",
   "zh": {
