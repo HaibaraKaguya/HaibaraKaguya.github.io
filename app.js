@@ -6,58 +6,62 @@ const NOTES = [
   "zone": "daily",
   "order": 190,
   "accent": "#3affd6",
-  "repo": "ProtocolBench / Reviewer & contracts",
+  "repo": "ProtocolBench / Agent communication protocols",
   "url": "https://proceedings.mlr.press/v306/du26l.html",
   "date": "2026-10-25",
   "zh": {
     "cat": "2026-10-25 / 论文阅读与研究思路",
-    "status": "全文已读 · 未复现 · Reviewer 方案待验证",
-    "title": "从通信协议到验收证据：接口契约、依赖与 Reviewer｜2026-10-25｜ProtocolBench",
-    "excerpt": "通信成功不保证集成成功：以自己的前后端案例为中心，整理契约同步、依赖与验收门槛，以及控制变量、强基线和失效边界。",
+    "status": "全文已读 · 四种协议与评测方法整理 · 未复现",
+    "title": "四种 Agent 通信协议如何连接编排器与子代理：机制、测试与研究思路｜2026-10-25｜ProtocolBench",
+    "excerpt": "重点理解 A2A、ACP、ANP 与 Agora 如何组织任务交接、执行状态、身份联系和交互契约，再提炼安全、效率、并发与鲁棒性的测试方法。",
     "sections": [
       {
-        "h": "我带走的问题：通信成功，为什么验收仍然会失败？",
-        "p": "ProtocolBench 研究通信协议的评测与选择。我最关心的却是编排器与 subagent 之间的接口契约、任务依赖，以及多个 Agent 的产物能否真正接起来。我的学习收获与作者的研究重心存在偏移：比起给四种协议排位，我更想知道如何构造测试，暴露协作失配，并让 Reviewer 依据真实证据决定是否放行。\n\n本次阅读带走三点：理解不同协议能提供什么交互机制；借鉴安全、延迟、并发和故障测试的组织方式；把“局部提交成功”与“整体集成通过”分开。以下 Reviewer 与契约机制是我的研究设想，不是 ProtocolBench 已解决的功能，也不是本次已实施的系统。"
+        "h": "我的主要收获：四种协议的机制，以及如何研究它们",
+        "p": "这次阅读最重要的收获，是理解 A2A、ACP、ANP、Agora 四种通信协议各自怎样连接 Agent，以及怎样把协议差异变成可以测量的问题。我关注编排器与 subagent 之间的接口契约、任务依赖和 Agent 联系，因此按同一组问题理解四者：任务如何发出，输入输出如何约定，进度和结果如何返回，参与者怎样建立联系，下一步由谁决定。\n\n第二个收获是测试方法：安全性、时间效率、并发处理和故障鲁棒性需要不同场景与指标。第三个收获是科研方法：比较已有方案同样可以形成研究，但必须解释差异来源、提供有竞争力的对照，并说明适用边界。Reviewer 是这些认识在我项目中的应用方向；聊天里的 fun/funn 只是辅助理解的例子。"
       },
       {
-        "h": "我的案例：fun 与 funn 暴露的是哪一种错误？",
-        "p": "我提出的协作场景是：O 派 A 调研、B 做后端、C 做前端。A 将优化建议传给 B，B 实现了相应能力；C 没有获得已确认的接口，自行使用另一个入口。Reviewer 阅读需求和解释后认为只是命名小问题而放行，集成时却失败。\n\n这里的 fun/funn 是讨论案例，不是已复现实验。内部函数分别叫 fun 和 funn 并不必然出错；只有实际跨边界的请求路径、函数签名、参数或返回结构不兼容，才构成接口失配。\n\n失败不只是消息没送到。研究建议变成对外接口时缺少确认，前端实现没有依赖已确定的契约，Reviewer 又用“意图一致”代替了“调用兼容”的证据。把全部聊天广播给所有成员，也不能保证每个实现遵守最新接口。"
+        "h": "先定位：协议与 LangGraph、MetaGPT 分别负责什么",
+        "p": "LangGraph 用节点、边和状态组织流程；MetaGPT 用角色、行动与 SOP 组织协作。四种协议主要提供独立 Agent 之间的交互规则，可以与这些框架组合。一个完整团队可以对外暴露为一个 Agent，远程调用者不必了解其内部全部分工。\n\n我把三个问题分开：接口契约规定可接受的输入、输出、状态和错误；任务依赖规定谁需要谁的结果、何时允许继续；Agent 联系规定如何发现、寻址、认证和交换消息。协议对这些问题的覆盖程度不同，不会自动替我建立 LangGraph 式依赖图。\n\nTable 1 的 Structured、Async、Targeted、P2P 分别涉及格式、执行时序、目标和连接方式，不是同一维度的四个互斥类别。下面按论文涉及的版本与设计重点理解，不能把表中定位当作所有版本的固定性能保证。"
       },
       {
-        "h": "四种协议给我提供的是机制，不是自动防错保证",
-        "p": "A2A 规范任务委托、状态与产物交付。B 可以把接口定义作为产物交给 O，再由 O 传给 C；也可以按系统允许的方式直接联系 C。协议不强制经过 O，也不自动建立任务依赖。\n\nACP 用统一接口管理一次执行 Run：启动、跟踪状态、获取输出。执行编号像任务单号；多次查询同一个编号，不等于重复执行。O 可以接收结构化事件或主动查询，再更新 LangGraph 状态、判断是否启动下游。超时和重试策略仍需上层安排，没收到回复也不等于任务没执行。\n\nANP 更关注跨环境的能力发现、身份验证与安全通信。它可帮助 C 找到并确认外部 B，再按应用约定获取接口定义；不会自动提供“读取最新版契约”的业务操作，更不会消除接口失配。\n\nAgora 允许交互引用具体协议文档，用 protocolHash 标识共同遵循的规则。它不是所有成员自动读取的公共账本；引用相同文档也不保证代码符合文档，仍需要执行校验。\n\n必须区分 Agent 之间的任务接口和被开发软件的前后端接口。通信协议可以传递后者的契约，但不会自动验证生成的软件兼容。Table 1 的 Structured、Async、Targeted、P2P 分属不同维度，不宜当作互斥架构分类。"
+        "h": "A2A：用能力名片、任务状态与产物建立委托关系",
+        "p": "A2A 的核心是把另一个 Agent 当作可以委托工作的独立服务。Agent Card 描述能力、入口和交互要求；Message 表达请求与补充信息；Task 跟踪一项工作的生命周期；Artifact 表达交付结果。论文涉及的实现主要通过 HTTP、JSON-RPC 和可选 SSE 交换结构化请求与更新。\n\n编排器 O 可以先了解 A 的能力，发送任务，再接收执行状态、补充输入请求和最终产物。若 B 依赖 A 的结果，O 可以把 A 的产物放入 B 的任务输入；但这一依赖由 O 定义，A2A 不强制所有通信经过 O，也允许系统按设计直接连接 Agent。\n\n接口层面，A2A 规范任务交接与状态表达，但能力名片不等于完整业务类型契约。“结果必须包含哪些字段、怎样证明正确”仍需应用明确。依赖层面，任务完成状态提供推进流程的信号，但收到完成事件不等于产物已验收。\n\n联系 LangGraph：节点通过 A2A 委托远程 Agent；回传状态更新图状态；条件边决定等待、补充输入、检查产物或启动下游。联系 MetaGPT：一个软件团队可以在内部按 SOP 分工，对外用任务和产物与调用者交接。我的收获是将能力发现、任务进度和结果交付分开建模。"
       },
       {
-        "h": "Reviewer 的关键：放行必须依赖证据",
-        "p": "我希望 Reviewer 验收的对象从“代码看起来合理”转向“产物满足同一份契约，并通过实际集成”。至少区分四种状态：任务已提交、契约已确认、实现已验证、集成已通过。完成事件只能说明执行结束，不能直接证明下游依赖满足或整体可用。\n\n拟议流程是：A 提供调研依据；B 提案、O 确认对外契约；B 与 C 依据同一版本实现；独立检查契约符合性与真实调用链；Reviewer 根据结果验收。C 可以提前做页面和交互，不必等待全部后端完成，但接入实现需要已确认的接口。\n\n契约应覆盖必要的路径或签名、参数与返回值、错误约定及版本。实现方和使用方各自声明 produces、requires、owner、contract_version，使 O 能判断等待什么，而不是猜等待几分钟。接口变更后，应通知受影响任务，并使依赖旧契约的验收结果重新检查；完全兼容的内部改名不应一律触发阻断。\n\nReviewer 应核对前端实际请求与后端实际入口，并取得至少一条贯穿前后端的行为测试证据。若必要测试失败，就不能靠其他维度高分抵消；未执行、受阻、失败和通过也应分别记录。具体自动化机制、准确率与成本尚待验证。"
+        "h": "ACP：把一次执行变成可启动、可跟踪、可取回结果的 Run",
+        "p": "这里 ACP 指 Agent Communication Protocol。它以统一的服务接口连接不同框架的 Agent，采用偏 REST 的 HTTP 交互，围绕消息和一次执行 Run 管理输入、状态与输出，并支持同步、异步和流式方式。\n\n例如 O 请求 B 定义接口，服务接受后返回执行标识 run-42。O 随后可以等待结果、查询 run-42，或在支持的方式下接收状态事件。执行完成后，O 取得产物，再把它作为 C 的输入。多次查询 run-42 仍是跟踪同一项工作，不是在重新启动任务。\n\n我最初把执行管理想得很复杂，以为协议还要安排次数和时间。后来分清：执行标识用来关联记录；查询间隔、等待上限、重试预算由上层策略安排；执行耗时从时间记录计算。超时只说明没有及时收到结果，不证明 B 没执行，应先确认原执行状态，避免重复工作。\n\n对依赖管理，关键是“等所需状态与产物就绪”，而不是“等若干分钟”。ACP 提供结构化执行信息，O 决定哪种状态满足下游条件。联系 LangGraph，可以把启动远程执行、等待事件、检查输出和条件跳转映射到图中的状态与节点。\n\n我的直观理解是“监听结构化状态后推进流程”，但监听只是接收方式；ACP 同时规范执行请求与结果。它与 A2A 都能实现委托和结果交接，区别是设计侧重点，不宜把二者写成完全不同的防错方法。"
       },
       {
-        "h": "论文怎样做测试，以及我如何迁移到自己的问题",
-        "p": "ProtocolBench 固定任务条件并比较四种协议，覆盖四类场景：GAIA 协作文档问答检查任务与过程质量；Streaming Queue 检查高吞吐请求下的延迟和稳定性；Fail-Storm Recovery 定期终止部分节点，检查恢复与通信连续性；Safety Tech 在医疗问答背景中加入传输、身份和信息保护探测。\n\n这些维度是测试工具箱，不是每项研究必须全部测的清单。Fail-Storm 的 answer discovery 是通信连续性的辅助信号，不应直接当作严格的问答正确率；安全探测通过也不等于普遍安全保证。\n\n对我的 Reviewer 研究，优先关注不兼容接口的误放行率、正常产物的误拒率、冲突发现率、变更到同步完成的时间、最终集成成功率，以及增加的模型调用、耗时和人工介入。鲁棒性应具体落实到旧契约、遗漏通知、并发修改和错误验收，而不只是节点掉线。"
+        "h": "ANP：先建立 Agent 之间可验证的联系，再开展业务交互",
+        "p": "ANP 更关注互不属于同一管理环境的 Agent 如何发现彼此、确认身份并安全通信。论文所涉及的设计包括身份与加密通信层、元协议协商层、应用协议层：底层处理身份与安全联系，中间层为交互规则协商提供框架，上层承载具体能力和业务。\n\nDID 是结合密钥与身份文档使用的标识机制；端到端加密保护发送者与目标接收者之间的内容。身份验证不代表对方天然可信，也不自动授予任务权限。编排器与外部 subagent 的委托范围还需应用与授权策略明确。\n\n沿我的关注点看，O 或 C 可以发现外部 B，验证其身份并按约定交换请求；接口描述与应用协议帮助双方理解怎样调用。若需要“获取最新业务契约”，仍要设计这一操作，ANP 不会替每个 Agent 自动提供它。任务之间的先后关系、契约更新通知和验收依然由编排系统落实。\n\n联系 MetaGPT：同一团队内部通常已知成员与连接条件；如果某个角色由另一组织的服务承担，就需要把发现、身份和信任边界显式处理。ANP 的启发主要在这里。若所有 Agent 已处于同一可信本地环境，其跨边界能力未必是当前主要需求。"
       },
       {
-        "h": "如何设计能揭示失效边界的场景",
-        "p": "先明确真实需求和失败类型，再定义实验条件；不能先做出方法，再只挑它能赢的环境。拟议案例包括接口不变、路径或参数不兼容、返回字段删除、两个 Agent 并发修改、契约更新后消费者仍使用旧版，以及仅内部重命名但对外接口兼容。最后一种用于检查误报。\n\n每个案例需要预先定义正确行为：兼容时允许继续；不兼容时阻止放行或要求修复；输入缺失时明确报告阻塞。必要测试没执行，不能等同于通过。\n\n用于调试机制的案例与最终测试案例应分开。在固定模型和预算下重复运行，保留误放行、误拒和修复失败的轨迹。当前这些是待开展的实验设计，不报告性能提升。"
+        "h": "Agora：明确双方这次共同遵循哪份交互契约",
+        "p": "Agora 的特点是元协议：提供共同的交互外壳，同时允许具体任务使用不同的 Protocol Document。文档描述请求、响应及单轮或多轮规则；protocolHash 标识具体文档内容，调用者据此表明希望采用哪套约定，接收方确认是否支持。\n\n例如 O 与 A 约定资料检索的输入字段、证据输出格式、缺少条件时的补充交互和失败表示。双方用同一份规则解释这次请求，而不只是依赖一段含糊的自然语言要求。其生态还讨论协商以及将重复交互实现为 routine；规范接口本身不强制规定协商和执行必须使用哪种方法。\n\n这里的文档不是所有成员自动读取的通用账本。哈希让双方识别同一份内容，不保证实现遵守，也不自动提供权限、全局依赖调度或验收。交互规则可以描述步骤顺序，但仍需执行系统真正落实等待、失败传播和恢复。\n\n联系 MetaGPT 的 SOP，两者都重视明确约定，但范围不同：团队 SOP 组织内部职责和交接，Agora 文档约定独立参与者之间的具体交互。我的收获是把“共同引用契约”与“实际执行契约”分开，随后设计一致性检查。"
       },
       {
-        "h": "控制变量：比较协议设计，还是比较整套实现？",
-        "p": "我最初理解为“只换协议就是控制单一变量”。进一步讨论后发现，替换协议通常也替换 SDK、连接管理、重试默认值和安全配置。SDK 是实现协议的软件包；软件栈更快，不足以单独证明协议规则更好。\n\n如果研究实际部署，应记录版本、配置和负载，将结论限定到所测软件栈。如果解释某个机制的因果作用，则还要对齐其他条件，并单独改变连接复用、重试或功能开关等因素。控制变量的前提，是先区分研究对象和干扰因素。\n\nProtocolBench 正文 §3.2 写保留原生重试和重连，附录 F.1 却写禁用适配器内部重试和重连、在上层 PAL 统一恢复。两处描述需要结合代码和运行配置核对。附录列出多实现比较与若干消融，但未给出逐项完整结果，不能将计划或预期视为已验证结论。"
+        "h": "四者如何共同帮助我理解接口、依赖与联系",
+        "p": "A2A 让我关注能力声明、任务状态与产物；ACP 让我关注执行标识、等待、事件与结果；ANP 让我关注发现、身份与跨边界联系；Agora 让我关注共同引用的交互规则。它们的能力有重叠，不能只用四个标签替代架构分析。\n\n我还区分了两层接口：Agent 之间如何发任务与交结果，以及它们生成的软件之间如何调用。前者可以传递后者的契约，却不自动保证后者兼容。聊天中的 fun/funn 只说明这个边界：内部名字不同可以正常，真正需要检查的是对外入口、参数和返回值是否一致。\n\n对我后续的 Reviewer，重要的是将协议回传信息转成可检查的状态：任务提交、依赖满足、契约符合、集成通过应分别判断。收到结构化消息不等于内容正确，也不等于可以放行。这是协议学习给我的项目启发，尚不是已实现的方案。"
       },
       {
-        "h": "强基线：新机制比普通工程措施多解决了什么？",
-        "p": "基线是对照方案；强基线是本身足够可靠、具有竞争力的对照。复杂机制优于没有保护的流程，并不能证明复杂度有必要。对我的设计，应先比较“共享接口文件＋普通集成测试”，再检查版本同步、依赖管理和 Reviewer 门槛各自增加了什么价值。移除一个组件进行比较，可以帮助判断收益来自哪里。\n\nProtocolRouter 先过滤硬约束，再结合优先级和可选性能信息选择协议，本身包含规则。Table 6 中加入性能信息后，场景准确率由 53.5% 到 63.3%，模块准确率由 71.2% 到 81.7%。这说明该信息在作者构造的选择任务中有帮助，不直接证明选择方法优于使用同样信息的简单规则。Table 7 则补充实际运行比较，但也存在指标取舍。\n\n未来实验还应对齐可用信息与资源预算。若新方案多用一轮模型检查，收益可能来自额外计算；若规则基线拿不到相同契约或历史信息，比较也不公平。"
+        "h": "ProtocolBench：用四种测试环境观察不同取舍",
+        "p": "GAIA 文档问答：用规划、检索、提取和汇总工作流观察任务成功与过程质量。Streaming Queue：用协调者和多个 worker 处理大量请求，观察端到端时间、吞吐、波动和尾部行为。Fail-Storm Recovery：周期性终止部分 Agent 再恢复，观察恢复时间与通信连续性。Safety Tech：在医疗问答背景中加入传输、身份、重放和信息泄露等安全探测。\n\n我主要学到的是把“效果好”拆成不同可测要求：安全性、时间效率、并发稳定性、出现问题后的鲁棒性。指标要跟研究问题对应，不能凭一个总分覆盖所有取舍。Fail-Storm 的 answer discovery 是辅助通信信号，不等于严格问答准确率；通过指定安全探测，也不代表全面安全。\n\n这些测试组织方式可以迁移到我的研究：正常任务、缺失输入、依赖未满足、消息延迟、旧契约与并发修改分别施加压力。应预先定义每种情况允许继续、要求补充、阻塞或失败的条件，再同时记录正确性和资源成本。以上迁移是实验设想，并未在本次阅读中运行。"
       },
       {
-        "h": "我的科研方法修正：工程研究也可以产生学术贡献",
-        "p": "我最初把路线概括为：工程类比较现成方案、寻找适合环境并测试；学术类提出创新点，再与过去比较。这个划分过于简单。工程问题也能形成学术研究，关键是是否得到新的、可信且可解释的知识。\n\n更合适的两条路线是：测量与评测驱动，揭示已有方案的差异、规律和边界；方法与系统驱动，针对已确认的缺口提出机制，并验证收益及原因。二者可以连接成“测出问题—设计机制—重新验证”。\n\n我保留的研究流程是：真实场景中的反复失败 → 对原因的可检验假设 → 有竞争力的基线 → 新机制与消融 → 成本及失效边界 → 未参与调试的新条件。实验需要分别回答收益是谁造成的、新机制是否值得采用、结论在哪些条件下成立。\n\nProtocolBench 的主要实验使用固定模型，规模扩展主要检查适配器开销，Router 主要用于离线或低频配置。增加适配器不等于已经证明未知协议上的选择能力。对我的方向，也必须从命名冲突扩展到类型变化、版本并存和依赖传播，才能判断机制的推广性。"
+        "h": "Router 是后续选择机制，不是我唯一的收获",
+        "p": "ProtocolRouter 根据场景或模块需求先排除不满足硬约束的协议，再结合偏好与可选性能信息配置协议。跨协议消息转换由适配器完成；Router 主要是离线或低频规划，不应理解为完整的在线自适应调度器。ProtocolRouterBench 则构造带明确约束的场景，评估选择是否符合设定答案。\n\nTable 6 中加入性能信息后，场景准确率从 53.5% 到 63.3%，模块准确率从 71.2% 到 81.7%。这支持信息对该选择任务有帮助，不直接证明超过使用同样信息的简单规则。Table 7 补充实际执行比较，同时存在指标取舍。\n\n对我而言，协议的实现思路和测试设计比 Router 本身更值得保留。论文更接近评测与系统研究：建立通信层的受控比较，也是贡献，不能只概括为“加了一个 Router 提高准确率”。"
       },
       {
-        "h": "我保留的研究问题与下一步",
-        "p": "我的核心问题是：多个 Agent 并行生成相互依赖的产物时，如何建立共同契约、传播变更，并让 Reviewer 依据可执行证据阻止不兼容产物被放行？\n\n保守路径：固定少量兼容与不兼容案例，用接口文件和集成测试建立基线。稳步路径：在现有编排中加入契约版本、依赖状态和独立验收，逐项比较效果；这是当前更合适的方向。激进路径：研究执行中的契约协商、变更影响分析及自动恢复，需要先有可信的测试和评价标准。\n\n本次阅读未修改 Reviewer 或编排器，也未复现 ProtocolBench。fun/funn 是用于明确问题的案例，不能替代已有项目的真实故障证据。本笔记记录学习收获与待验证设计。"
+        "h": "科研方法一：控制变量与强基线分别证明什么",
+        "p": "更换协议通常也更换 SDK、连接处理、重试默认值和安全配置。SDK 是实现协议的软件包。我最初理解“只换协议就是单一变量”，现在会先问研究对象：若比较部署方案，结论应限定到版本与配置；若解释协议设计的原因，则要进一步隔离实现差异。\n\n本文正文 §3.2 写保留原生重试和重连，附录 F.1 却写禁用适配器内部重试和重连、在上层 PAL 统一恢复，需要结合代码和配置核对。附录列出若干消融与多实现比较，但没有逐项完整结果，不能将预期当作已验证结论。\n\n强基线是本身具有竞争力的对照，用来回答新方法额外解决了什么。协议选择应比较固定方案、使用同样信息的简单规则与提出的方法；我的契约或 Reviewer 设计也应先面对“共享接口文件＋普通集成测试”。若只比没有保护的流程，就难以证明额外复杂度有必要。\n\n公平比较还包括相同可用信息和相近预算。更多模型调用带来的提升，不能直接全部归因于新机制。消融则帮助判断哪个组件产生收益。"
       },
       {
-        "h": "论文入口与阅读范围",
-        "p": "ProtocolBench: Which LLM MultiAgent Protocol to Choose? Hongyi Du 等，ICML 2026，PMLR 306:26649–26695。本次阅读 Zotero 中的 47 页版本，包含正文与附录；记录日期为 2026-10-25。论文提出协议评测、约束感知选择器及选择评测集；本文重心是它对我自己的接口契约、依赖和 Reviewer 研究的启发。",
+        "h": "科研方法二：从比较到解释，再检查边界",
+        "p": "我最初把工程研究概括为挑选现成方案、比较并找适合环境，把学术研究概括为提出新方法再比较。更准确的区分是测量与评测驱动，以及方法与系统驱动；工程问题同样可以产生学术贡献。前者揭示差异与规律，后者提出机制，两者都需要可信证据。\n\n“找环境”应改成从真实需求明确目标场景，再系统改变条件。不能只挑自己能赢的环境。研究流程可以是：真实失败或未解释差异 → 可检验假设 → 强基线 → 机制与消融 → 成本与失效边界 → 未参与调试的新条件。\n\n控制变量回答收益由谁造成，强基线回答新方法是否值得，推广性回答换条件后是否仍成立。本文扩展到更多 worker 的部分主要测适配器开销，不能直接当成完整系统的大规模验证；增加适配器也不证明未知协议上的选择能力。\n\n我后续会以接口契约、依赖和 Reviewer 为应用方向：先建立有限且可靠的测试，再研究协作机制。四种协议提供可借鉴的交互工具，测试方法帮助把想法转成可证伪的研究问题。本次未实施这些机制，也未复现论文。"
+      },
+      {
+        "h": "论文入口与阅读记录",
+        "p": "ProtocolBench: Which LLM MultiAgent Protocol to Choose? Hongyi Du 等，ICML 2026，PMLR 306:26649–26695。本次通读 Zotero 中的 47 页正文与附录；记录日期为 2026-10-25。本文以四种协议机制为主体，连接我关注的编排器—subagent 接口、依赖与联系，再整理测试方法和科研思路。",
         "links": [
           {
             "label": "PMLR 论文记录",
@@ -73,45 +77,53 @@ const NOTES = [
   },
   "en": {
     "cat": "2026-10-25 / Paper reading and research design",
-    "status": "Paper read · Not reproduced · Reviewer design unvalidated",
-    "title": "From protocols to acceptance evidence: contracts, dependencies and Reviewer | 2026-10-25 | ProtocolBench",
-    "excerpt": "My research lessons on interface mismatch, evidence-based acceptance, controlled tests, competitive baselines and failure boundaries.",
+    "status": "Paper read · Four protocols and evaluation methods · Not reproduced",
+    "title": "How four Agent protocols connect orchestrators and sub-agents: mechanisms, tests and research lessons | 2026-10-25 | ProtocolBench",
+    "excerpt": "A2A, ACP, ANP and Agora through task handoffs, execution state, identity and interaction contracts, followed by evaluation and research lessons.",
     "sections": [
       {
-        "h": "My question: successful communication can still fail acceptance",
-        "p": "ProtocolBench evaluates and selects communication protocols. My main interest is the contract between an orchestrator and sub-agents, dependencies between their outputs, and evidence-based Reviewer acceptance. The lessons I retain are protocol boundaries, workload-based testing, and the distinction between submission, verification and integration. The proposed mechanisms below have not been implemented or validated in this reading session."
+        "h": "My main lessons: four protocol mechanisms and how to evaluate them",
+        "p": "My main takeaway is how A2A, ACP, ANP and Agora connect agents, examined through orchestrator–sub-agent contracts, dependencies and relationships. The next lessons are security, efficiency, concurrency and failure testing, followed by research design. Reviewer acceptance is an application of this learning; the casual fun/funn example is not the main subject."
       },
       {
-        "h": "The calculator example and the two interface layers",
-        "p": "In my illustrative scenario, A researches, B builds the backend and C builds the frontend. C assumes an entry point inconsistent with B, while a Reviewer approves based on intent. Internal names fun and funn are harmless if the external call remains compatible; incompatible routes, signatures, arguments or response structures cause the integration failure. This is a thought experiment, not a reproduced result. Agent-to-agent task interfaces and the software interfaces generated by those agents are distinct."
+        "h": "Position protocols alongside LangGraph and MetaGPT",
+        "p": "LangGraph organizes nodes, edges and state; MetaGPT organizes roles, actions and SOPs. Communication protocols connect independent participants and can coexist with those frameworks. Separate interface contracts, task dependencies and agent relationships. Structured, Async, Targeted and P2P in Table 1 describe different dimensions rather than mutually exclusive architecture classes."
       },
       {
-        "h": "What the four protocols contribute",
-        "p": "A2A provides task delegation, status and artifacts without requiring every exchange to pass through O. ACP provides execution runs, status and outputs; polling a run does not execute it again. ANP addresses discovery, identity and secure cross-boundary communication, not automatic contract synchronization. Agora identifies a shared interaction document with a protocol hash; it is not a public ledger and does not prove implementation conformance. An orchestrator must still manage dependencies and enforce acceptance."
+        "h": "A2A: capability discovery, task state and artifacts",
+        "p": "An Agent Card describes capabilities and interaction requirements; Messages carry requests and follow-ups; Tasks represent tracked work; Artifacts deliver outputs. O can delegate, receive updates and pass artifacts to another agent. Communication need not always pass through O. Business output schemas and dependency gates remain application responsibilities. A LangGraph node can delegate remotely through A2A, update state on return and use conditional edges to determine the next action; a MetaGPT team can expose one external task boundary."
       },
       {
-        "h": "Reviewer design: require executable evidence",
-        "p": "The proposed workflow confirms a versioned interface before dependent integration work, lets frontend and backend implementation proceed against that contract, and checks the actual call chain before approval. Separate submitted, contract-ready, implementation-verified and integration-passed states. Record producers, consumers, ownership and contract version; recheck affected results after incompatible changes. Critical failed checks cannot be offset by a high aggregate score. Missing, blocked, failed and passed tests must remain distinct."
+        "h": "ACP: start, track and retrieve an execution Run",
+        "p": "Agent Communication Protocol standardizes execution requests, messages, run state and outputs across frameworks through HTTP-oriented interfaces, with synchronous, asynchronous and streaming modes. A run identifier tracks one execution; repeated polling does not restart it. O can wait, poll or receive events, then pass outputs downstream. Poll intervals, deadlines and retry budgets belong to upper-layer policy. A timeout does not establish that execution never occurred. The dependency should wait for required state and artifacts, not an arbitrary duration. A listener is only one receiving mechanism, not the whole protocol."
       },
       {
-        "h": "Transfer the testing method, not every metric",
-        "p": "ProtocolBench uses collaborative QA, high-throughput queues, cyclic node failures and communication-security probes. For my work, prioritize incompatible-output false approvals, false rejections of valid outputs, conflict detection, synchronization delay, end-to-end integration success and resource cost. Test stale contracts, missed updates, concurrent changes and mistaken acceptance. Include compatible internal renaming to detect false alarms. Fault-recovery discovery is a communication proxy, not strict QA correctness."
+        "h": "ANP: verifiable relationships across agent boundaries",
+        "p": "The design discussed in the paper separates identity/encrypted communication, meta-protocol negotiation and application protocols. DID-based authentication and E2E messaging help independently operated agents discover and contact each other. Authentication is not blanket trust or delegated authority. Application operations such as retrieving a current contract still need to be defined, and dependency scheduling remains above the protocol. This matters when a MetaGPT-like role is supplied by an outside organization, rather than an already connected local participant."
       },
       {
-        "h": "Controls, baselines and causal attribution",
-        "p": "Changing a protocol can also change its SDK, retry defaults, connection reuse and security configuration. Deployment comparisons and causal claims about protocol design need different controls. The paper preserves native retry behavior in section 3.2 but describes uniform upper-layer recovery in appendix F.1; this needs implementation verification. Listed ablations without full results are not completed evidence. For my mechanism, shared interface files plus ordinary integration tests form an essential baseline, with equal information and resource budgets."
+        "h": "Agora: identify the concrete interaction contract",
+        "p": "Agora provides a common outer interface while a Protocol Document defines a particular interaction. A protocolHash identifies the document, allowing a caller to request rules a receiver supports. Documents can describe fields, responses and multiround behavior. Negotiation and executable routines are related ideas, not mandatory implementations of the interface. This is not a public task ledger. Matching hashes do not prove generated code conforms, and workflow dependencies still require execution logic. Compared with MetaGPT SOPs, the focus is an agreement across participants rather than the entire internal team organization."
       },
       {
-        "h": "Router evidence and generalization limits",
-        "p": "Table 6 raises scenario accuracy from 53.5% to 63.3% and module accuracy from 71.2% to 81.7% when performance information is added. This supports the usefulness of information within the constructed selection task, not superiority over an equally informed rule baseline. Execution tests show trade-offs. The router is an offline or low-frequency planner, and worker scaling largely measures adapter overhead. Extensibility through adapters is not demonstrated cold-start selection quality."
+        "h": "Relate the four designs to my research",
+        "p": "A2A highlights task handoff and artifacts, ACP execution state, ANP discovery and identity, and Agora a referenced interaction agreement. Agent task interfaces differ from interfaces in the software agents generate. Protocols can carry the latter without proving compatibility. Internal names fun and funn can differ harmlessly; actual routes, arguments and responses matter. My Reviewer application should distinguish submission, satisfied dependencies, contract conformance and verified integration. These are proposed applications, not implemented capabilities."
       },
       {
-        "h": "My revised research method and next step",
-        "p": "Engineering research can make academic contributions. Measurement-driven work explains existing differences; method-driven work proposes and validates a mechanism. Start from recurring failures, formulate a testable explanation, compare competitive baselines, isolate component effects, and measure costs and failure boundaries on held-out cases. Start conservatively with contract and integration tests; the recommended steady path adds versioned contracts, dependency state and independent acceptance. Dynamic negotiation and recovery are a more ambitious later direction. No project code was changed and no reproduction is claimed."
+        "h": "ProtocolBench: four workloads and separate dimensions",
+        "p": "GAIA stresses collaborative document processing, Streaming Queue latency and throughput under load, Fail-Storm continuity and recovery after cyclic node failures, and Safety Tech concrete communication-security probes. These form a testing toolbox for security, time efficiency, concurrency and robustness. Discovery is an auxiliary continuity signal rather than strict QA correctness; probe success is not universal security. My future tests can stress missing inputs, unmet dependencies, delayed messages, stale contracts and concurrent changes, with explicit expected behavior and resource accounting."
+      },
+      {
+        "h": "Router and evidence boundaries",
+        "p": "ProtocolRouter filters hard constraints and selects per-scenario or per-module protocols using preferences and optional performance information. Adapters translate heterogeneous messages. It is mainly offline or low-frequency planning, while ProtocolRouterBench tests constrained choices. Table 6 improves scenario accuracy from 53.5% to 63.3% and module accuracy from 71.2% to 81.7% with performance information. This does not establish superiority over equally informed simple rules. End-to-end tests also expose trade-offs. The benchmark and protocol learning matter to me beyond the router."
+      },
+      {
+        "h": "Research lessons: controls, competitive baselines and boundaries",
+        "p": "Changing protocols can also change SDKs, retry defaults, connection reuse and security stacks. Distinguish deployment comparisons from causal claims about design. Section 3.2 and appendix F.1 differ on native versus uniform recovery, requiring code/configuration verification. Listed ablations without full results are not completed evidence. Strong baselines test whether added complexity is necessary, using equal information and budgets. For my work, shared interface files plus integration tests are essential controls. Measurement-driven and method-driven research can both contribute academically: start with a real question, test a hypothesis, compare strong baselines, isolate effects and evaluate costs and failure boundaries on new conditions. No project implementation or reproduction is claimed."
       },
       {
         "h": "Paper and reading record",
-        "p": "ProtocolBench: Which LLM MultiAgent Protocol to Choose? Hongyi Du et al., ICML 2026, PMLR 306:26649–26695. Read the 47-page paper and appendices from Zotero. Recorded on 2026-10-25. This note centers my Reviewer research rather than retelling every paper component.",
+        "p": "ProtocolBench: Which LLM MultiAgent Protocol to Choose? Hongyi Du et al., ICML 2026, PMLR 306:26649–26695. Read the 47-page paper and appendices from Zotero. Recorded on 2026-10-25. Four protocol mechanisms are the main subject, followed by testing and research methodology.",
         "links": [
           {
             "label": "PMLR record",
@@ -1286,12 +1298,12 @@ const TIMELINE = [
 {
   "year": "2026.10.25",
   "zh": {
-    "t": "论文阅读：ProtocolBench 与 Reviewer 验收设计",
-    "d": "以自己的接口失配案例连接契约、依赖和验收证据，整理测试方法、强基线与科研思路；方案尚待验证。"
+    "t": "论文阅读：四种 Agent 通信协议与评测方法",
+    "d": "围绕 A2A、ACP、ANP、Agora 梳理接口、依赖与 Agent 联系，再整理安全、效率、并发、鲁棒性及科研方法。"
   },
   "en": {
-    "t": "Paper reading: ProtocolBench and Reviewer acceptance",
-    "d": "Contract mismatch, dependency state and acceptance evidence, with controlled tests and competitive baselines; designs remain unvalidated."
+    "t": "Paper reading: four Agent protocols and evaluation",
+    "d": "A2A, ACP, ANP and Agora through contracts, dependencies and relationships, followed by security, efficiency, concurrency and robustness testing."
   }
 },
 {
