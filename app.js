@@ -2,6 +2,131 @@ document.documentElement.classList.add('js');
 
 const NOTES = [
 {
+  "id": "14",
+  "zone": "daily",
+  "order": 190,
+  "accent": "#3affd6",
+  "repo": "ProtocolBench / Reviewer & contracts",
+  "url": "https://proceedings.mlr.press/v306/du26l.html",
+  "date": "2026-10-25",
+  "zh": {
+    "cat": "2026-10-25 / 论文阅读与研究思路",
+    "status": "全文已读 · 未复现 · Reviewer 方案待验证",
+    "title": "从通信协议到验收证据：接口契约、依赖与 Reviewer｜2026-10-25｜ProtocolBench",
+    "excerpt": "通信成功不保证集成成功：以自己的前后端案例为中心，整理契约同步、依赖与验收门槛，以及控制变量、强基线和失效边界。",
+    "sections": [
+      {
+        "h": "我带走的问题：通信成功，为什么验收仍然会失败？",
+        "p": "ProtocolBench 研究通信协议的评测与选择。我最关心的却是编排器与 subagent 之间的接口契约、任务依赖，以及多个 Agent 的产物能否真正接起来。我的学习收获与作者的研究重心存在偏移：比起给四种协议排位，我更想知道如何构造测试，暴露协作失配，并让 Reviewer 依据真实证据决定是否放行。\n\n本次阅读带走三点：理解不同协议能提供什么交互机制；借鉴安全、延迟、并发和故障测试的组织方式；把“局部提交成功”与“整体集成通过”分开。以下 Reviewer 与契约机制是我的研究设想，不是 ProtocolBench 已解决的功能，也不是本次已实施的系统。"
+      },
+      {
+        "h": "我的案例：fun 与 funn 暴露的是哪一种错误？",
+        "p": "我提出的协作场景是：O 派 A 调研、B 做后端、C 做前端。A 将优化建议传给 B，B 实现了相应能力；C 没有获得已确认的接口，自行使用另一个入口。Reviewer 阅读需求和解释后认为只是命名小问题而放行，集成时却失败。\n\n这里的 fun/funn 是讨论案例，不是已复现实验。内部函数分别叫 fun 和 funn 并不必然出错；只有实际跨边界的请求路径、函数签名、参数或返回结构不兼容，才构成接口失配。\n\n失败不只是消息没送到。研究建议变成对外接口时缺少确认，前端实现没有依赖已确定的契约，Reviewer 又用“意图一致”代替了“调用兼容”的证据。把全部聊天广播给所有成员，也不能保证每个实现遵守最新接口。"
+      },
+      {
+        "h": "四种协议给我提供的是机制，不是自动防错保证",
+        "p": "A2A 规范任务委托、状态与产物交付。B 可以把接口定义作为产物交给 O，再由 O 传给 C；也可以按系统允许的方式直接联系 C。协议不强制经过 O，也不自动建立任务依赖。\n\nACP 用统一接口管理一次执行 Run：启动、跟踪状态、获取输出。执行编号像任务单号；多次查询同一个编号，不等于重复执行。O 可以接收结构化事件或主动查询，再更新 LangGraph 状态、判断是否启动下游。超时和重试策略仍需上层安排，没收到回复也不等于任务没执行。\n\nANP 更关注跨环境的能力发现、身份验证与安全通信。它可帮助 C 找到并确认外部 B，再按应用约定获取接口定义；不会自动提供“读取最新版契约”的业务操作，更不会消除接口失配。\n\nAgora 允许交互引用具体协议文档，用 protocolHash 标识共同遵循的规则。它不是所有成员自动读取的公共账本；引用相同文档也不保证代码符合文档，仍需要执行校验。\n\n必须区分 Agent 之间的任务接口和被开发软件的前后端接口。通信协议可以传递后者的契约，但不会自动验证生成的软件兼容。Table 1 的 Structured、Async、Targeted、P2P 分属不同维度，不宜当作互斥架构分类。"
+      },
+      {
+        "h": "Reviewer 的关键：放行必须依赖证据",
+        "p": "我希望 Reviewer 验收的对象从“代码看起来合理”转向“产物满足同一份契约，并通过实际集成”。至少区分四种状态：任务已提交、契约已确认、实现已验证、集成已通过。完成事件只能说明执行结束，不能直接证明下游依赖满足或整体可用。\n\n拟议流程是：A 提供调研依据；B 提案、O 确认对外契约；B 与 C 依据同一版本实现；独立检查契约符合性与真实调用链；Reviewer 根据结果验收。C 可以提前做页面和交互，不必等待全部后端完成，但接入实现需要已确认的接口。\n\n契约应覆盖必要的路径或签名、参数与返回值、错误约定及版本。实现方和使用方各自声明 produces、requires、owner、contract_version，使 O 能判断等待什么，而不是猜等待几分钟。接口变更后，应通知受影响任务，并使依赖旧契约的验收结果重新检查；完全兼容的内部改名不应一律触发阻断。\n\nReviewer 应核对前端实际请求与后端实际入口，并取得至少一条贯穿前后端的行为测试证据。若必要测试失败，就不能靠其他维度高分抵消；未执行、受阻、失败和通过也应分别记录。具体自动化机制、准确率与成本尚待验证。"
+      },
+      {
+        "h": "论文怎样做测试，以及我如何迁移到自己的问题",
+        "p": "ProtocolBench 固定任务条件并比较四种协议，覆盖四类场景：GAIA 协作文档问答检查任务与过程质量；Streaming Queue 检查高吞吐请求下的延迟和稳定性；Fail-Storm Recovery 定期终止部分节点，检查恢复与通信连续性；Safety Tech 在医疗问答背景中加入传输、身份和信息保护探测。\n\n这些维度是测试工具箱，不是每项研究必须全部测的清单。Fail-Storm 的 answer discovery 是通信连续性的辅助信号，不应直接当作严格的问答正确率；安全探测通过也不等于普遍安全保证。\n\n对我的 Reviewer 研究，优先关注不兼容接口的误放行率、正常产物的误拒率、冲突发现率、变更到同步完成的时间、最终集成成功率，以及增加的模型调用、耗时和人工介入。鲁棒性应具体落实到旧契约、遗漏通知、并发修改和错误验收，而不只是节点掉线。"
+      },
+      {
+        "h": "如何设计能揭示失效边界的场景",
+        "p": "先明确真实需求和失败类型，再定义实验条件；不能先做出方法，再只挑它能赢的环境。拟议案例包括接口不变、路径或参数不兼容、返回字段删除、两个 Agent 并发修改、契约更新后消费者仍使用旧版，以及仅内部重命名但对外接口兼容。最后一种用于检查误报。\n\n每个案例需要预先定义正确行为：兼容时允许继续；不兼容时阻止放行或要求修复；输入缺失时明确报告阻塞。必要测试没执行，不能等同于通过。\n\n用于调试机制的案例与最终测试案例应分开。在固定模型和预算下重复运行，保留误放行、误拒和修复失败的轨迹。当前这些是待开展的实验设计，不报告性能提升。"
+      },
+      {
+        "h": "控制变量：比较协议设计，还是比较整套实现？",
+        "p": "我最初理解为“只换协议就是控制单一变量”。进一步讨论后发现，替换协议通常也替换 SDK、连接管理、重试默认值和安全配置。SDK 是实现协议的软件包；软件栈更快，不足以单独证明协议规则更好。\n\n如果研究实际部署，应记录版本、配置和负载，将结论限定到所测软件栈。如果解释某个机制的因果作用，则还要对齐其他条件，并单独改变连接复用、重试或功能开关等因素。控制变量的前提，是先区分研究对象和干扰因素。\n\nProtocolBench 正文 §3.2 写保留原生重试和重连，附录 F.1 却写禁用适配器内部重试和重连、在上层 PAL 统一恢复。两处描述需要结合代码和运行配置核对。附录列出多实现比较与若干消融，但未给出逐项完整结果，不能将计划或预期视为已验证结论。"
+      },
+      {
+        "h": "强基线：新机制比普通工程措施多解决了什么？",
+        "p": "基线是对照方案；强基线是本身足够可靠、具有竞争力的对照。复杂机制优于没有保护的流程，并不能证明复杂度有必要。对我的设计，应先比较“共享接口文件＋普通集成测试”，再检查版本同步、依赖管理和 Reviewer 门槛各自增加了什么价值。移除一个组件进行比较，可以帮助判断收益来自哪里。\n\nProtocolRouter 先过滤硬约束，再结合优先级和可选性能信息选择协议，本身包含规则。Table 6 中加入性能信息后，场景准确率由 53.5% 到 63.3%，模块准确率由 71.2% 到 81.7%。这说明该信息在作者构造的选择任务中有帮助，不直接证明选择方法优于使用同样信息的简单规则。Table 7 则补充实际运行比较，但也存在指标取舍。\n\n未来实验还应对齐可用信息与资源预算。若新方案多用一轮模型检查，收益可能来自额外计算；若规则基线拿不到相同契约或历史信息，比较也不公平。"
+      },
+      {
+        "h": "我的科研方法修正：工程研究也可以产生学术贡献",
+        "p": "我最初把路线概括为：工程类比较现成方案、寻找适合环境并测试；学术类提出创新点，再与过去比较。这个划分过于简单。工程问题也能形成学术研究，关键是是否得到新的、可信且可解释的知识。\n\n更合适的两条路线是：测量与评测驱动，揭示已有方案的差异、规律和边界；方法与系统驱动，针对已确认的缺口提出机制，并验证收益及原因。二者可以连接成“测出问题—设计机制—重新验证”。\n\n我保留的研究流程是：真实场景中的反复失败 → 对原因的可检验假设 → 有竞争力的基线 → 新机制与消融 → 成本及失效边界 → 未参与调试的新条件。实验需要分别回答收益是谁造成的、新机制是否值得采用、结论在哪些条件下成立。\n\nProtocolBench 的主要实验使用固定模型，规模扩展主要检查适配器开销，Router 主要用于离线或低频配置。增加适配器不等于已经证明未知协议上的选择能力。对我的方向，也必须从命名冲突扩展到类型变化、版本并存和依赖传播，才能判断机制的推广性。"
+      },
+      {
+        "h": "我保留的研究问题与下一步",
+        "p": "我的核心问题是：多个 Agent 并行生成相互依赖的产物时，如何建立共同契约、传播变更，并让 Reviewer 依据可执行证据阻止不兼容产物被放行？\n\n保守路径：固定少量兼容与不兼容案例，用接口文件和集成测试建立基线。稳步路径：在现有编排中加入契约版本、依赖状态和独立验收，逐项比较效果；这是当前更合适的方向。激进路径：研究执行中的契约协商、变更影响分析及自动恢复，需要先有可信的测试和评价标准。\n\n本次阅读未修改 Reviewer 或编排器，也未复现 ProtocolBench。fun/funn 是用于明确问题的案例，不能替代已有项目的真实故障证据。本笔记记录学习收获与待验证设计。"
+      },
+      {
+        "h": "论文入口与阅读范围",
+        "p": "ProtocolBench: Which LLM MultiAgent Protocol to Choose? Hongyi Du 等，ICML 2026，PMLR 306:26649–26695。本次阅读 Zotero 中的 47 页版本，包含正文与附录；记录日期为 2026-10-25。论文提出协议评测、约束感知选择器及选择评测集；本文重心是它对我自己的接口契约、依赖和 Reviewer 研究的启发。",
+        "links": [
+          {
+            "label": "PMLR 论文记录",
+            "url": "https://proceedings.mlr.press/v306/du26l.html"
+          },
+          {
+            "label": "完整论文与附录",
+            "url": "https://raw.githubusercontent.com/mlresearch/v306/main/assets/du26l/du26l.pdf"
+          }
+        ]
+      }
+    ]
+  },
+  "en": {
+    "cat": "2026-10-25 / Paper reading and research design",
+    "status": "Paper read · Not reproduced · Reviewer design unvalidated",
+    "title": "From protocols to acceptance evidence: contracts, dependencies and Reviewer | 2026-10-25 | ProtocolBench",
+    "excerpt": "My research lessons on interface mismatch, evidence-based acceptance, controlled tests, competitive baselines and failure boundaries.",
+    "sections": [
+      {
+        "h": "My question: successful communication can still fail acceptance",
+        "p": "ProtocolBench evaluates and selects communication protocols. My main interest is the contract between an orchestrator and sub-agents, dependencies between their outputs, and evidence-based Reviewer acceptance. The lessons I retain are protocol boundaries, workload-based testing, and the distinction between submission, verification and integration. The proposed mechanisms below have not been implemented or validated in this reading session."
+      },
+      {
+        "h": "The calculator example and the two interface layers",
+        "p": "In my illustrative scenario, A researches, B builds the backend and C builds the frontend. C assumes an entry point inconsistent with B, while a Reviewer approves based on intent. Internal names fun and funn are harmless if the external call remains compatible; incompatible routes, signatures, arguments or response structures cause the integration failure. This is a thought experiment, not a reproduced result. Agent-to-agent task interfaces and the software interfaces generated by those agents are distinct."
+      },
+      {
+        "h": "What the four protocols contribute",
+        "p": "A2A provides task delegation, status and artifacts without requiring every exchange to pass through O. ACP provides execution runs, status and outputs; polling a run does not execute it again. ANP addresses discovery, identity and secure cross-boundary communication, not automatic contract synchronization. Agora identifies a shared interaction document with a protocol hash; it is not a public ledger and does not prove implementation conformance. An orchestrator must still manage dependencies and enforce acceptance."
+      },
+      {
+        "h": "Reviewer design: require executable evidence",
+        "p": "The proposed workflow confirms a versioned interface before dependent integration work, lets frontend and backend implementation proceed against that contract, and checks the actual call chain before approval. Separate submitted, contract-ready, implementation-verified and integration-passed states. Record producers, consumers, ownership and contract version; recheck affected results after incompatible changes. Critical failed checks cannot be offset by a high aggregate score. Missing, blocked, failed and passed tests must remain distinct."
+      },
+      {
+        "h": "Transfer the testing method, not every metric",
+        "p": "ProtocolBench uses collaborative QA, high-throughput queues, cyclic node failures and communication-security probes. For my work, prioritize incompatible-output false approvals, false rejections of valid outputs, conflict detection, synchronization delay, end-to-end integration success and resource cost. Test stale contracts, missed updates, concurrent changes and mistaken acceptance. Include compatible internal renaming to detect false alarms. Fault-recovery discovery is a communication proxy, not strict QA correctness."
+      },
+      {
+        "h": "Controls, baselines and causal attribution",
+        "p": "Changing a protocol can also change its SDK, retry defaults, connection reuse and security configuration. Deployment comparisons and causal claims about protocol design need different controls. The paper preserves native retry behavior in section 3.2 but describes uniform upper-layer recovery in appendix F.1; this needs implementation verification. Listed ablations without full results are not completed evidence. For my mechanism, shared interface files plus ordinary integration tests form an essential baseline, with equal information and resource budgets."
+      },
+      {
+        "h": "Router evidence and generalization limits",
+        "p": "Table 6 raises scenario accuracy from 53.5% to 63.3% and module accuracy from 71.2% to 81.7% when performance information is added. This supports the usefulness of information within the constructed selection task, not superiority over an equally informed rule baseline. Execution tests show trade-offs. The router is an offline or low-frequency planner, and worker scaling largely measures adapter overhead. Extensibility through adapters is not demonstrated cold-start selection quality."
+      },
+      {
+        "h": "My revised research method and next step",
+        "p": "Engineering research can make academic contributions. Measurement-driven work explains existing differences; method-driven work proposes and validates a mechanism. Start from recurring failures, formulate a testable explanation, compare competitive baselines, isolate component effects, and measure costs and failure boundaries on held-out cases. Start conservatively with contract and integration tests; the recommended steady path adds versioned contracts, dependency state and independent acceptance. Dynamic negotiation and recovery are a more ambitious later direction. No project code was changed and no reproduction is claimed."
+      },
+      {
+        "h": "Paper and reading record",
+        "p": "ProtocolBench: Which LLM MultiAgent Protocol to Choose? Hongyi Du et al., ICML 2026, PMLR 306:26649–26695. Read the 47-page paper and appendices from Zotero. Recorded on 2026-10-25. This note centers my Reviewer research rather than retelling every paper component.",
+        "links": [
+          {
+            "label": "PMLR record",
+            "url": "https://proceedings.mlr.press/v306/du26l.html"
+          },
+          {
+            "label": "Paper and appendices",
+            "url": "https://raw.githubusercontent.com/mlresearch/v306/main/assets/du26l/du26l.pdf"
+          }
+        ]
+      }
+    ]
+  }
+},
+{
   "id": "13",
   "zone": "learning",
   "order": 180,
@@ -1158,6 +1283,17 @@ const SYSTEMS = [
 ];
 
 const TIMELINE = [
+{
+  "year": "2026.10.25",
+  "zh": {
+    "t": "论文阅读：ProtocolBench 与 Reviewer 验收设计",
+    "d": "以自己的接口失配案例连接契约、依赖和验收证据，整理测试方法、强基线与科研思路；方案尚待验证。"
+  },
+  "en": {
+    "t": "Paper reading: ProtocolBench and Reviewer acceptance",
+    "d": "Contract mismatch, dependency state and acceptance evidence, with controlled tests and competitive baselines; designs remain unvalidated."
+  }
+},
 {
   "year": "2026.10.24",
   "zh": {
